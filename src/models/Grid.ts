@@ -12,6 +12,20 @@ import southEastWest from "/paths/Road 8 Detour.png";
 import northEastWest from "/paths/Road 9 Detour.png";
 import grass from "/paths/Terrain 1.png";
 
+const imgRotationMap: { [key: string]: string } = {
+  "/paths/Road 1.png": northSouth,
+  "/paths/Road 2.png": eastWest,
+  "/paths/Road 4 Turn.png": southWest,
+  "/paths/Road 5 Turn.png": northWest,
+  "/paths/Road 6 Turn.png": northEast,
+  "/paths/Road 7 Turn.png": southEast,
+  "/paths/Road 8 Detour.png": northSouthWest,
+  "/paths/Road 9 Detour.png": northSouthEast,
+  "/paths/Road 10 Detour.png": northEastWest,
+  "/paths/Road 11 Detour.png": southEastWest,
+  "/paths/Terrain 1.png": grass,
+};
+
 // If paths are connected increase the depth of the tile
 // This hard coded array is used to determine the paths of the tiles
 // Works only with 7x7 grid
@@ -90,7 +104,6 @@ class Grid {
         }
       }
       const [imgSrc, paths] = this.getRandomMovablePath();
-      console.log(imgSrc, paths);
       this.extraTile = new Tile(
         new Point(4, -2),
         this.tileWidth,
@@ -219,6 +232,26 @@ class Grid {
       }
     }
     return null;
+  }
+
+  rotateTile(tile: Tile) {
+    const rotationMap: { [key: string]: string } = {
+      NORTH: "EAST",
+      EAST: "SOUTH",
+      SOUTH: "WEST",
+      WEST: "NORTH",
+    };
+
+    tile.paths = tile.paths.map(
+      (direction) => rotationMap[direction] || direction
+    );
+    const imgSrc =
+      decodeURIComponent(
+        "/" + tile.pathImg.src.split("/").slice(-2).join("/")
+      ) || "";
+    tile.pathImg = this.images.get(
+      decodeURIComponent(imgRotationMap[imgSrc])
+    ) as HTMLImageElement;
   }
 
   isWithinGrid(row: number, col: number) {

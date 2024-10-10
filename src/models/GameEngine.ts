@@ -67,6 +67,32 @@ class GameEngine {
       this.redrawGrid(ctx);
     }
   }
+
+  handleMouseClick(
+    ctx: CanvasRenderingContext2D,
+    screenX: number,
+    screenY: number
+  ) {
+    if (this.handleExtraTileClick(ctx, screenX, screenY)) return;
+  }
+
+  handleExtraTileClick(
+    ctx: CanvasRenderingContext2D,
+    screenX: number,
+    screenY: number
+  ) {
+    const extraTile = this.grid.extraTile;
+    const pos = this.grid.extraTile?.pos;
+    const isoCoords = extraTile?.screenToIso(screenX, screenY, this.worldWidth);
+    if (isoCoords && pos?.x === isoCoords.x && pos?.y === isoCoords.y) {
+      if (extraTile) {
+        this.grid.rotateTile(extraTile);
+      }
+      this.redrawGrid(ctx);
+      return true;
+    }
+    return false;
+  }
 }
 
 export default GameEngine;

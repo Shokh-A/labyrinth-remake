@@ -50,9 +50,11 @@ const GameGrid: React.FC = () => {
     };
 
     canvas.addEventListener("mousemove", handleMouseHover);
+    canvas.addEventListener("click", handleMouseClick);
 
     return () => {
       canvas.removeEventListener("mousemove", handleMouseHover);
+      canvas.removeEventListener("click", handleMouseClick);
     };
   }, []);
 

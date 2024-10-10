@@ -1,0 +1,46 @@
+  // Check if a tile is connected to adjacent tiles
+  private isConnected(tile: Tile): boolean {
+    const { pos, paths } = tile;
+    const x = pos.x;
+    const y = pos.y;
+
+    // Check NORTH
+    if (
+      paths.includes("NORTH") &&
+      x > 0 &&
+      this.tiles[x - 1][y].paths.includes("SOUTH")
+    ) {
+      return true;
+    }
+
+    // Check SOUTH
+    if (
+      paths.includes("SOUTH") &&
+      x < this.rows - 1 &&
+      this.tiles[x + 1][y].paths.includes("NORTH")
+    ) {
+      return true;
+    }
+
+    // Check EAST
+    if (
+      paths.includes("EAST") &&
+      y < this.cols - 1 &&
+      this.tiles[x][y + 1].paths.includes("WEST")
+    ) {
+      return true;
+    }
+
+    // Check WEST
+    if (
+      paths.includes("WEST") &&
+      y > 0 &&
+      this.tiles[x][y - 1].paths.includes("EAST")
+    ) {
+      return true;
+    }
+
+    // No connections found
+    return false;
+  }
+

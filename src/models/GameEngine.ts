@@ -26,10 +26,6 @@ class GameEngine {
     }
   }
 
-  run(ctx: CanvasRenderingContext2D) {
-    this.grid.draw(ctx);
-  }
-
   redrawGrid(ctx: CanvasRenderingContext2D) {
     ctx.clearRect(0, 0, this.worldWidth, this.worldHeight);
     this.grid.draw(ctx);
@@ -40,22 +36,23 @@ class GameEngine {
     screenX: number,
     screenY: number
   ) {
-    const { x: row, y: col } = this.grid.getTile(screenX, screenY);
+    const tile = this.grid.getTile(screenX, screenY);
+    if (tile === null) {
+      if (this.grid.hoveredTile !== null) {
+        this.grid.hoveredTile.tileType = "ACTION";
+        this.grid.hoveredTile = null;
 
-    if (
-      this.isEdge(row, col) &&
-      !this.isCorner(row, col) &&
-      row % 2 === 0 &&
-      col % 2 === 0 &&
-      this.grid.hoveredTile === null
-    ) {
-      const hoveredTile = this.grid.tiles[row][col];
-      hoveredTile.tileType = "FIXED";
-      this.grid.hoveredTile = hoveredTile;
+        this.redrawGrid(ctx);
+      }
+      return;
+    }
+    if (this.grid.isActionTile(tile) && this.grid.hoveredTile === null) {
+      this.grid.hoveredTile = tile;
+      tile.tileType = "FIXED";
 
       this.redrawGrid(ctx);
     } else if (
-      (row % 2 !== 0 || col % 2 !== 0) &&
+      tile !== this.grid.hoveredTile &&
       this.grid.hoveredTile !== null
     ) {
       this.grid.hoveredTile.tileType = "ACTION";
@@ -63,24 +60,6 @@ class GameEngine {
 
       this.redrawGrid(ctx);
     }
-  }
-
-  isCorner(row: number, col: number) {
-    return (
-      (row === 0 && col === 0) ||
-      (row === 0 && col === this.grid.cols - 1) ||
-      (row === this.grid.rows - 1 && col === 0) ||
-      (row === this.grid.rows - 1 && col === this.grid.cols - 1)
-    );
-  }
-
-  isEdge(row: number, col: number) {
-    return (
-      row === 0 ||
-      row === this.grid.rows - 1 ||
-      col === 0 ||
-      col === this.grid.cols - 1
-    );
   }
 }
 

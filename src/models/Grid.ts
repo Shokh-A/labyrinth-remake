@@ -74,10 +74,9 @@ class Grid {
     await this.preloadImages().then(() => {
       for (let row = 0; row < this.rows; row++) {
         for (let col = 0; col < this.cols; col++) {
-          const [imgSrc, paths] =
-            row > 0 && col > 0 && row < this.rows - 1 && col < this.cols - 1
-              ? this.imageSelector(row - 1, col - 1)
-              : [grass, []];
+          const [imgSrc, paths] = !this.isEdge(row, col)
+            ? this.imageSelector(row - 1, col - 1)
+            : [grass, []];
 
           this.tiles[row][col] = new Tile(
             new Point(row, col),
@@ -104,27 +103,46 @@ class Grid {
     });
   }
 
-  private getTileType(x: number, y: number) {
-    if (
-      (x === 0 && y === 0) ||
-      (x === 0 && y === this.cols - 1) ||
-      (x === this.rows - 1 && y === 0) ||
-      (x === this.rows - 1 && y === this.cols - 1) ||
-      (x === 0 && y % 2 === 1) ||
-      (x % 2 === 1 && y === 0) ||
-      (x === this.rows - 1 && y % 2 === 1) ||
-      (x % 2 === 1 && y === this.cols - 1)
-    ) {
-      return "EMPTY";
-    } else if (
-      (x === 0 && y % 2 === 0) ||
-      (x % 2 === 0 && y === 0) ||
-      (x === this.rows - 1 && y % 2 === 0) ||
-      (x % 2 === 0 && y === this.cols - 1)
-    ) {
-      return "ACTION";
+  private preloadImage(src: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = src;
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+    });
+  }
+
+  private async preloadImages() {
+    const images = [
+      "/paths/Road 1.png",
+      "/paths/Road 2.png",
+      "/paths/Road 4 Turn.png",
+      "/paths/Road 5 Turn.png",
+      "/paths/Road 6 Turn.png",
+      "/paths/Road 7 Turn.png",
+      "/paths/Road 8 Detour.png",
+      "/paths/Road 9 Detour.png",
+      "/paths/Road 10 Detour.png",
+      "/paths/Road 11 Detour.png",
+      "/paths/Terrain 1.png",
+    ];
+
+    for (const src of images) {
+      await this.preloadImage(src).then((img) => {
+        this.images.set(src, img);
+      });
     }
-    return "FIXED";
+  }
+
+  private getTileType(x: number, y: number) {
+    if (this.isCorner(x, y) || (this.isEdge(x, y) && !this.isEvenTile(x, y))) {
+      return "EMPTY";
+    } else if (this.isEdge(x, y) && this.isEvenTile(x, y)) {
+      return "ACTION";
+    } else if (this.isOddTile(x, y)) {
+      return "FIXED";
+    }
+    return "MOVABLE";
   }
 
   draw(ctx: CanvasRenderingContext2D) {
@@ -163,52 +181,18 @@ class Grid {
       case x % 2 === 0 && y % 2 === 0 && x > this.rows / 2 && y < this.cols / 2:
         return [southEastWest, ["SOUTH", "EAST", "WEST"]];
       default:
-        // return [grass, []];
         return this.getRandomMovablePath();
     }
-    // return [grass, []];
   }
 
   private getRandomMovablePath(): [string, string[]] {
-    // console.log(movablePaths4.length);
     const randomIndex = Math.random() * movablePaths4.length;
     const [removedPath] = movablePaths4.splice(randomIndex, 1);
 
     return removedPath;
   }
 
-  private preloadImage(src: string): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.src = src;
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
-    });
-  }
-
-  private async preloadImages() {
-    const images = [
-      "/paths/Road 1.png",
-      "/paths/Road 2.png",
-      "/paths/Road 4 Turn.png",
-      "/paths/Road 5 Turn.png",
-      "/paths/Road 6 Turn.png",
-      "/paths/Road 7 Turn.png",
-      "/paths/Road 8 Detour.png",
-      "/paths/Road 9 Detour.png",
-      "/paths/Road 10 Detour.png",
-      "/paths/Road 11 Detour.png",
-      "/paths/Terrain 1.png",
-    ];
-
-    for (const src of images) {
-      await this.preloadImage(src).then((img) => {
-        this.images.set(src, img);
-      });
-    }
-  }
-
-  getTile(screenX: number, screenY: number) {
+  getTile(screenX: number, screenY: number): Tile | null {
     for (let row = 0; row < this.rows; row++) {
       for (let col = 0; col < this.cols; col++) {
         const { x, y } = this.tiles[row][col].screenToIso(
@@ -216,12 +200,43 @@ class Grid {
           screenY,
           this.worldWidth
         );
-        if (x >= 0 && x < this.cols && y >= 0 && y < this.rows) {
-          return { x, y };
+        if (this.isWithinGrid(x, y)) {
+          return this.tiles[x][y];
         }
       }
     }
-    return { x: -1, y: -1 };
+    return null;
+  }
+
+  isWithinGrid(row: number, col: number) {
+    return row >= 0 && row < this.rows && col >= 0 && col < this.cols;
+  }
+
+  isCorner(row: number, col: number) {
+    return (
+      (row === 0 && col === 0) ||
+      (row === 0 && col === this.cols - 1) ||
+      (row === this.rows - 1 && col === 0) ||
+      (row === this.rows - 1 && col === this.cols - 1)
+    );
+  }
+
+  isEdge(row: number, col: number) {
+    return (
+      row === 0 || row === this.rows - 1 || col === 0 || col === this.cols - 1
+    );
+  }
+
+  isEvenTile(row: number, col: number) {
+    return row % 2 === 0 && col % 2 === 0;
+  }
+
+  isOddTile(row: number, col: number) {
+    return row % 2 === 1 && col % 2 === 1;
+  }
+
+  isActionTile(tile: Tile) {
+    return tile.tileType === "ACTION";
   }
 }
 

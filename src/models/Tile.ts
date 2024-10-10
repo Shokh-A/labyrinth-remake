@@ -31,9 +31,7 @@ class Tile {
   }
 
   draw(ctx: CanvasRenderingContext2D, windowSize: number) {
-    if (this.tileType === "EMPTY") {
-      return;
-    }
+    if (this.tileType === "EMPTY") return;
 
     const topColor =
       this.tileType === "ACTION" ? "rgba(144, 238, 144, 0.3)" : "#ffdb4d";
@@ -110,7 +108,6 @@ class Tile {
     ctx.stroke();
   }
 
-  // Convert isometric coordinates to screen coordinates
   isoToScreen(x: number, y: number, windowSize: number) {
     const screenX = (x - y) * (this.width / 2) + windowSize / 2;
     const screenY = (x + y) * (this.height / 2);

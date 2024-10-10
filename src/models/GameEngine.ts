@@ -39,7 +39,9 @@ class GameEngine {
     const tile = this.grid.getTile(screenX, screenY);
     if (tile === null) {
       if (this.grid.hoveredTile !== null) {
-        this.grid.hoveredTile.tileType = "ACTION";
+        if (this.grid.extraTile) {
+          this.grid.swapWithExtraTile(this.grid.hoveredTile);
+        }
         this.grid.hoveredTile = null;
 
         this.redrawGrid(ctx);
@@ -47,15 +49,19 @@ class GameEngine {
       return;
     }
     if (this.grid.isActionTile(tile) && this.grid.hoveredTile === null) {
-      this.grid.hoveredTile = tile;
-      tile.tileType = "FIXED";
+      // this.grid.hoveredTile = tile;
+      if (this.grid.extraTile) {
+        this.grid.hoveredTile = this.grid.swapWithExtraTile(tile);
+      }
 
       this.redrawGrid(ctx);
     } else if (
       tile !== this.grid.hoveredTile &&
       this.grid.hoveredTile !== null
     ) {
-      this.grid.hoveredTile.tileType = "ACTION";
+      if (this.grid.extraTile) {
+        this.grid.swapWithExtraTile(this.grid.hoveredTile);
+      }
       this.grid.hoveredTile = null;
 
       this.redrawGrid(ctx);

@@ -172,15 +172,28 @@ class Grid {
         return [southEastWest, ["SOUTH", "EAST", "WEST"]];
       case y === this.cols - 3 && x % 2 === 0:
         return [northEastWest, ["NORTH", "EAST", "WEST"]];
-      case x % 2 === 0 && y % 2 === 0 && x < this.rows / 2 && y < this.cols / 2:
+      case x % 2 === 0 &&
+        y % 2 === 0 &&
+        x < (this.rows - 3) / 2 &&
+        y < (this.cols - 3) / 2:
         return [northSouthEast, ["NORTH", "SOUTH", "EAST"]];
-      case x % 2 === 0 && y % 2 === 0 && x > this.rows / 2 && y > this.cols / 2:
+      case x % 2 === 0 &&
+        y % 2 === 0 &&
+        x > (this.rows - 3) / 2 &&
+        y > (this.cols - 3) / 2:
         return [northSouthWest, ["NORTH", "SOUTH", "WEST"]];
-      case x % 2 === 0 && y % 2 === 0 && x < this.rows / 2 && y > this.cols / 2:
+      case x % 2 === 0 &&
+        y % 2 === 0 &&
+        x < (this.rows - 3) / 2 &&
+        y > (this.cols - 3) / 2:
         return [northEastWest, ["NORTH", "EAST", "WEST"]];
-      case x % 2 === 0 && y % 2 === 0 && x > this.rows / 2 && y < this.cols / 2:
+      case x % 2 === 0 &&
+        y % 2 === 0 &&
+        x > (this.rows - 3) / 2 &&
+        y < (this.cols - 3) / 2:
         return [southEastWest, ["SOUTH", "EAST", "WEST"]];
       default:
+        // return [grass, []];
         return this.getRandomMovablePath();
     }
   }
@@ -237,6 +250,21 @@ class Grid {
 
   isActionTile(tile: Tile) {
     return tile.tileType === "ACTION";
+  }
+
+  swapWithExtraTile(tile: Tile) {
+    const { pos: pos1 } = tile;
+
+    if (this.extraTile) {
+      const { pos } = this.extraTile;
+      this.extraTile.pos = pos1;
+      this.tiles[pos1.x][pos1.y] = this.extraTile;
+
+      this.extraTile = tile;
+      tile.pos = pos;
+    }
+
+    return this.tiles[pos1.x][pos1.y];
   }
 }
 

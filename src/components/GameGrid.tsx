@@ -42,6 +42,13 @@ const GameGrid: React.FC = () => {
       gameEngine.handleMouseHover(ctx, screenX, screenY);
     };
 
+    const handleMouseClick = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      const screenX = e.clientX - rect.left;
+      const screenY = e.clientY - rect.top;
+      gameEngine.handleMouseClick(ctx, screenX, screenY);
+    };
+
     canvas.addEventListener("mousemove", handleMouseHover);
 
     return () => {

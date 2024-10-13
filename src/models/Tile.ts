@@ -3,55 +3,64 @@ import { Point } from "./index";
 type TileType = "FIXED" | "MOVABLE" | "ACTION" | "EMPTY";
 
 class Tile {
-  pos: Point;
-  width: number;
-  height: number;
-  depth: number;
-  pathImg: HTMLImageElement;
-  paths: string[] = [];
-  isConnected: boolean = false;
-  tileType: TileType;
-
   constructor(
-    pos: Point,
-    width: number,
-    height: number,
-    depth: number,
-    img: HTMLImageElement,
-    paths: string[] = [],
-    tileType: TileType
-  ) {
-    this.pos = pos;
-    this.width = width;
-    this.height = height;
-    this.depth = depth;
-    this.pathImg = img;
-    this.paths = paths;
-    this.tileType = tileType;
-  }
+    public pos: Point,
+    public width: number,
+    public height: number,
+    public depth: number,
+    public pathImg: HTMLImageElement,
+    public paths: string[] = [],
+    public tileType: TileType
+  ) {}
 
   draw(ctx: CanvasRenderingContext2D, windowSize: number) {
     if (this.tileType === "EMPTY") return;
 
-    const topColor =
-      this.tileType === "ACTION" ? "rgba(144, 238, 144, 0.3)" : "#ffdb4d";
-    const sideLeftColor =
-      this.tileType === "ACTION" ? "rgba(144, 238, 144, 0.3)" : "#4d7224";
-    const sideRightColor =
-      this.tileType === "ACTION" ? "rgba(144, 238, 144, 0.3)" : "#2f4b13";
-
     const pos = this.isoToScreen(this.pos.x, this.pos.y, windowSize);
-    this.drawTopFace(ctx, pos, topColor);
-    this.drawLeftFace(ctx, pos, sideLeftColor);
-    this.drawRightFace(ctx, pos, sideRightColor);
+    const colors = this.getTileColors();
+
+    this.drawFace(
+      ctx,
+      pos,
+      colors.top,
+      this.drawTopFace.bind(this),
+      this.tileType === "ACTION"
+    );
+    this.drawFace(ctx, pos, colors.left, this.drawLeftFace.bind(this));
+    this.drawFace(ctx, pos, colors.right, this.drawRightFace.bind(this));
   }
 
-  drawTopFace(ctx: CanvasRenderingContext2D, pos: Point, topColor: string) {
-    if (
-      this.tileType !== "ACTION" &&
-      this.tileType !== "EMPTY" &&
-      (this.tileType === "FIXED" || this.tileType === "MOVABLE")
-    ) {
+  private getTileColors() {
+    const isAction = this.tileType === "ACTION";
+    return {
+      top: isAction ? "rgba(144, 238, 144, 0.3)" : "#ffdb4d",
+      left: isAction ? "rgba(144, 238, 144, 0.3)" : "#4d7224",
+      right: isAction ? "rgba(144, 238, 144, 0.3)" : "#2f4b13",
+    };
+  }
+
+  private drawFace(
+    ctx: CanvasRenderingContext2D,
+    pos: Point,
+    color: string,
+    drawMethod: (ctx: CanvasRenderingContext2D, pos: Point) => void,
+    isFilled: boolean = true
+  ) {
+    ctx.beginPath();
+    drawMethod(ctx, pos);
+    ctx.closePath();
+
+    if (isFilled) {
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+
+    ctx.strokeStyle = "#000";
+    ctx.stroke();
+  }
+
+  private drawTopFace(ctx: CanvasRenderingContext2D, pos: Point) {
+    if (this.tileType === "FIXED" || this.tileType === "MOVABLE") {
       ctx.drawImage(
         this.pathImg,
         pos.x - this.width / 2,
@@ -60,61 +69,38 @@ class Tile {
         this.height
       );
     }
-
-    // Draw the top face outline
-    ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
     ctx.lineTo(pos.x + this.width / 2, pos.y + this.height / 2);
     ctx.lineTo(pos.x, pos.y + this.height);
     ctx.lineTo(pos.x - this.width / 2, pos.y + this.height / 2);
-    ctx.closePath();
-    if (this.tileType === "ACTION") {
-      ctx.fillStyle = topColor;
-      ctx.fill();
-    }
-    ctx.strokeStyle = "#000";
-    ctx.stroke();
   }
 
-  drawLeftFace(
-    ctx: CanvasRenderingContext2D,
-    pos: Point,
-    sideLeftColor: string = "#4d7224"
-  ) {
-    ctx.beginPath();
+  private drawLeftFace(ctx: CanvasRenderingContext2D, pos: Point) {
     ctx.moveTo(pos.x - this.width / 2, pos.y + this.height / 2);
     ctx.lineTo(pos.x, pos.y + this.height);
     ctx.lineTo(pos.x, pos.y + this.height + this.depth);
     ctx.lineTo(pos.x - this.width / 2, pos.y + this.height / 2 + this.depth);
-    ctx.closePath();
-    ctx.fillStyle = sideLeftColor;
-    ctx.fill();
-    ctx.stroke();
   }
 
-  drawRightFace(
-    ctx: CanvasRenderingContext2D,
-    pos: Point,
-    sideRightColor: string = "2f4b13"
-  ) {
-    ctx.beginPath();
+  private drawRightFace(ctx: CanvasRenderingContext2D, pos: Point) {
     ctx.moveTo(pos.x + this.width / 2, pos.y + this.height / 2);
     ctx.lineTo(pos.x, pos.y + this.height);
     ctx.lineTo(pos.x, pos.y + this.height + this.depth);
     ctx.lineTo(pos.x + this.width / 2, pos.y + this.height / 2 + this.depth);
-    ctx.closePath();
-    ctx.fillStyle = sideRightColor;
-    ctx.fill();
-    ctx.stroke();
   }
 
-  isoToScreen(x: number, y: number, windowSize: number) {
-    const screenX = (x - y) * (this.width / 2) + windowSize / 2;
-    const screenY = (x + y) * (this.height / 2);
-    return new Point(screenX, screenY);
+  isoToScreen(x: number, y: number, windowSize: number): Point {
+    return new Point(
+      (x - y) * (this.width / 2) + windowSize / 2,
+      (x + y) * (this.height / 2)
+    );
   }
 
-  screenToIso(screenX: number, screenY: number, windowSize: number) {
+  screenToIso(
+    screenX: number,
+    screenY: number,
+    windowSize: number
+  ): { x: number; y: number } {
     const centeredX = screenX - windowSize / 2;
     const x = (centeredX / (this.width / 2) + screenY / (this.height / 2)) / 2;
     const y = (screenY / (this.height / 2) - centeredX / (this.width / 2)) / 2;

@@ -212,7 +212,6 @@ class Grid {
     } else if (direction === "NORTH") {
       const lastTile = tiles[row][1];
       for (let i = 1; i < this.cols - 1; i++) {
-        console.log(i + ":", tiles[row][i].pos.x, tiles[row][i].pos.y);
         tiles[row][i].pos = new Point(row, (i - 1) % (this.cols - 2));
         if (i === this.cols - 2) {
           tile.pos = new Point(row, i);

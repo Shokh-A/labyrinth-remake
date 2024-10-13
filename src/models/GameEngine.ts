@@ -1,8 +1,9 @@
-import { Grid, Tile } from "./index";
+import { Grid, Player } from "./index";
 
 class GameEngine {
   private readonly grid: Grid;
   private slidingOn: boolean = true;
+  private player: Player;
 
   constructor(
     private readonly worldWidth: number,
@@ -12,12 +13,14 @@ class GameEngine {
     tileDepth: number
   ) {
     this.grid = new Grid(worldWidth, 7, 7, tileWidth, tileHeight, tileDepth);
+    this.player = new Player({ x: 0, y: 0 }, new Image());
   }
 
   async start(ctx: CanvasRenderingContext2D): Promise<void> {
     try {
       await this.grid.init();
       this.redrawGrid(ctx);
+      this.player.draw(ctx, this.grid.tileWidth);
     } catch (error) {
       console.error("Error occurred during game start:", error);
     }
@@ -26,6 +29,7 @@ class GameEngine {
   redrawGrid(ctx: CanvasRenderingContext2D): void {
     ctx.clearRect(0, 0, this.worldWidth, this.worldHeight);
     this.grid.draw(ctx);
+    this.player.draw(ctx, this.grid.tileWidth);
   }
 
   handleMouseHover(
@@ -37,23 +41,23 @@ class GameEngine {
     const tile = this.grid.getTile(screenX, screenY);
 
     if (!tile) {
-      this.clearHoveredTile();
-      this.redrawGrid(ctx);
+      this.clearHoveredTile(ctx);
       return;
     }
 
     if (tile.tileType === "ENABLED" && !this.grid.hoveredTile) {
       this.grid.hoveredTile = this.grid.swapWithExtraTile(tile);
+      this.redrawGrid(ctx);
     } else if (tile !== this.grid.hoveredTile && this.grid.hoveredTile) {
-      this.clearHoveredTile();
+      this.clearHoveredTile(ctx);
     }
-    this.redrawGrid(ctx);
   }
 
-  private clearHoveredTile(): void {
+  private clearHoveredTile(ctx: CanvasRenderingContext2D): void {
     if (this.grid.hoveredTile) {
       this.grid.swapWithExtraTile(this.grid.hoveredTile);
       this.grid.hoveredTile = null;
+      this.redrawGrid(ctx);
     }
   }
 
@@ -83,7 +87,7 @@ class GameEngine {
       this.grid.swapWithExtraTile(this.grid.hoveredTile!);
       this.grid.hoveredTile = null;
       this.redrawGrid(ctx);
-      // this.slidingOn = false;
+      this.slidingOn = false;
     }
   }
 }

@@ -24,16 +24,13 @@ const GameGrid: React.FC = () => {
     const ctx = canvas?.getContext("2d");
 
     if (!ctx || !canvas) return;
-    // gameEngine.run(ctx);
     gameEngine.start(ctx);
   }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
-
     if (!ctx || !canvas) return;
-    // gameEngine.run(ctx);
 
     const handleMouseHover = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();

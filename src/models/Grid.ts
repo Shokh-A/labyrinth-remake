@@ -11,6 +11,7 @@ import northEast from "/paths/Road 7 Turn.png";
 import southEastWest from "/paths/Road 8 Detour.png";
 import northEastWest from "/paths/Road 9 Detour.png";
 import grass from "/paths/Terrain 1.png";
+import { preloadImages } from "../services/imageLoader";
 
 const imgRotationMap: { [key: string]: string } = {
   "/paths/Road 1.png": northSouth,
@@ -56,7 +57,8 @@ const movablePaths4 = movablePaths1.concat(movablePaths2, movablePaths3);
 class Grid {
   tiles: Tile[][];
   hoveredTile: Tile | null = null;
-  extraTile: Tile | null = null;
+  extraTile: Tile;
+  disabledTile: Tile | null = null;
   images: Map<string, HTMLImageElement> = new Map();
   constructor(
     public worldWidth: number,
@@ -71,41 +73,21 @@ class Grid {
     this.tiles = new Array(this.rows)
       .fill(null)
       .map(() => new Array(this.cols).fill(null));
+    this.extraTile = new Tile(
+      new Point(4, -2),
+      this.tileWidth,
+      this.tileHeight,
+      this.tileDepth,
+      null as any,
+      [],
+      "MOVABLE"
+    );
   }
 
   async init() {
-    await this.preloadImages();
+    this.images = await preloadImages();
     this.initializeTiles();
     this.initializeExtraTile();
-  }
-
-  private async preloadImages() {
-    const images = [
-      "/paths/Road 1.png",
-      "/paths/Road 2.png",
-      "/paths/Road 4 Turn.png",
-      "/paths/Road 5 Turn.png",
-      "/paths/Road 6 Turn.png",
-      "/paths/Road 7 Turn.png",
-      "/paths/Road 8 Detour.png",
-      "/paths/Road 9 Detour.png",
-      "/paths/Road 10 Detour.png",
-      "/paths/Road 11 Detour.png",
-      "/paths/Terrain 1.png",
-    ];
-    for (const src of images) {
-      const img = await this.preloadImage(src);
-      this.images.set(src, img);
-    }
-  }
-
-  private preloadImage(src: string): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.src = src;
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
-    });
   }
 
   private initializeTiles() {
@@ -155,6 +137,20 @@ class Grid {
     return null;
   }
 
+  getExtraTile(screenX: number, screenY: number): Tile | null {
+    if (!this.extraTile) return null;
+
+    const { x: row, y: col } = this.extraTile.screenToIso(
+      screenX,
+      screenY,
+      this.worldWidth
+    );
+
+    if (this.extraTile.pos.x === row && this.extraTile.pos.y === col)
+      return this.extraTile;
+    return null;
+  }
+
   rotateTile(tile: Tile) {
     const rotationMap: { [key: string]: string } = {
       NORTH: "EAST",
@@ -173,21 +169,95 @@ class Grid {
     ) as HTMLImageElement;
   }
 
+  shiftAndDisable(tile: Tile) {
+    const { x: row, y: col } = tile.pos;
+    if (this.disabledTile) this.disabledTile.tileType = "ENABLED";
+    if (col === 0) {
+      this.shiftRow(tile, "SOUTH");
+      this.tiles[row][this.cols - 1].tileType = "DISABLED";
+      this.disabledTile = this.tiles[row][this.cols - 1];
+    } else if (col === this.cols - 1) {
+      this.shiftRow(tile, "NORTH");
+      this.tiles[row][0].tileType = "DISABLED";
+      this.disabledTile = this.tiles[row][0];
+    } else if (row === 0) {
+      this.shiftCol(tile, "EAST");
+      this.tiles[this.rows - 1][col].tileType = "DISABLED";
+      this.disabledTile = this.tiles[this.rows - 1][col];
+    } else if (row === this.rows - 1) {
+      this.shiftCol(tile, "WEST");
+      this.tiles[0][col].tileType = "DISABLED";
+      this.disabledTile = this.tiles[0][col];
+    }
+  }
+
   shiftRow(tile: Tile, direction: "NORTH" | "SOUTH") {
+    const tiles = this.tiles;
+    const { x: row, y: col } = tile.pos;
+
     if (direction === "SOUTH") {
-      console.log("Shifting row");
-      const tiles = this.tiles;
-      const { x: row, y: col } = tile.pos;
       const lastTile = tiles[row][this.cols - 2];
       for (let i = this.cols - 2; i > 0; i--) {
-        console.log(i + ":", tiles[row][i].pos.x, tiles[row][i].pos.y);
         tiles[row][i].pos = new Point(row, (i % (this.cols - 2)) + 1);
         if (i === 1) {
-          tiles[row][i] = lastTile;
+          tile.pos = new Point(row, i);
+          tiles[row][i] = tile;
           break;
         }
         tiles[row][i] = tiles[row][i - 1];
       }
+      lastTile.pos = new Point(row, 0);
+      this.hoveredTile = lastTile;
+      tiles[row][col] = this.hoveredTile;
+    } else if (direction === "NORTH") {
+      const lastTile = tiles[row][1];
+      for (let i = 1; i < this.cols - 1; i++) {
+        console.log(i + ":", tiles[row][i].pos.x, tiles[row][i].pos.y);
+        tiles[row][i].pos = new Point(row, (i - 1) % (this.cols - 2));
+        if (i === this.cols - 2) {
+          tile.pos = new Point(row, i);
+          tiles[row][i] = tile;
+          break;
+        }
+        tiles[row][i] = tiles[row][i + 1];
+      }
+      lastTile.pos = new Point(row, this.cols - 1);
+      this.hoveredTile = lastTile;
+      tiles[row][col] = this.hoveredTile;
+    }
+  }
+
+  shiftCol(tile: Tile, direction: "EAST" | "WEST") {
+    const tiles = this.tiles;
+    const { x: row, y: col } = tile.pos;
+    if (direction === "EAST") {
+      const lastTile = tiles[this.rows - 2][col];
+      for (let i = this.rows - 2; i > 0; i--) {
+        tiles[i][col].pos = new Point((i % (this.rows - 2)) + 1, col);
+        if (i === 1) {
+          tile.pos = new Point(i, col);
+          tiles[i][col] = tile;
+          break;
+        }
+        tiles[i][col] = tiles[i - 1][col];
+      }
+      lastTile.pos = new Point(0, col);
+      this.hoveredTile = lastTile;
+      tiles[row][col] = this.hoveredTile;
+    } else if (direction === "WEST") {
+      const lastTile = tiles[1][col];
+      for (let i = 1; i < this.rows - 1; i++) {
+        tiles[i][col].pos = new Point((i - 1) % (this.rows - 2), col);
+        if (i === this.rows - 2) {
+          tile.pos = new Point(i, col);
+          tiles[i][col] = tile;
+          break;
+        }
+        tiles[i][col] = tiles[i + 1][col];
+      }
+      lastTile.pos = new Point(this.rows - 1, col);
+      this.hoveredTile = lastTile;
+      tiles[row][col] = this.hoveredTile;
     }
   }
 
@@ -195,7 +265,7 @@ class Grid {
     return row >= 0 && row < this.rows && col >= 0 && col < this.cols;
   }
 
-  private isCorner(row: number, col: number): boolean {
+  public isCorner(row: number, col: number): boolean {
     return (
       (row === 0 && col === 0) ||
       (row === 0 && col === this.cols - 1) ||
@@ -225,7 +295,7 @@ class Grid {
     ) {
       return "EMPTY";
     } else if (this.isEdge(row, col) && this.isEvenTile(row, col)) {
-      return "ACTION";
+      return "ENABLED";
     } else if (this.isOddTile(row, col)) {
       return "FIXED";
     }
@@ -284,16 +354,16 @@ class Grid {
   }
 
   swapWithExtraTile(tile: Tile): Tile {
-    if (this.extraTile) {
-      const tempPos = tile.pos;
-      tile.pos = this.extraTile.pos;
-      this.extraTile.pos = tempPos;
-      this.tiles[tempPos.x][tempPos.y] = this.extraTile;
-      const swappedTile = this.extraTile;
-      this.extraTile = tile;
-      return swappedTile;
-    }
-    return tile;
+    const tilePos = tile.pos;
+    const extraTilePos = this.extraTile.pos;
+
+    this.extraTile.pos = tilePos;
+    tile.pos = extraTilePos;
+
+    this.tiles[tilePos.x][tilePos.y] = this.extraTile;
+    this.extraTile = tile;
+
+    return this.tiles[tilePos.x][tilePos.y];
   }
 }
 

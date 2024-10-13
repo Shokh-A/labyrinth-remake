@@ -2,6 +2,7 @@ import { Grid, Tile } from "./index";
 
 class GameEngine {
   private readonly grid: Grid;
+  private slidingOn: boolean = true;
 
   constructor(
     private readonly worldWidth: number,
@@ -32,20 +33,27 @@ class GameEngine {
     screenX: number,
     screenY: number
   ): void {
+    if (!this.slidingOn) return;
     const tile = this.grid.getTile(screenX, screenY);
 
     if (!tile) {
-      this.clearHoveredTile(ctx);
+      this.clearHoveredTile();
+      this.redrawGrid(ctx);
       return;
     }
 
-    if (
-      this.grid.getTileType(tile.pos.x, tile.pos.y) === "ACTION" &&
-      !this.grid.hoveredTile
-    ) {
-      this.setHoveredTile(tile, ctx);
+    if (tile.tileType === "ENABLED" && !this.grid.hoveredTile) {
+      this.grid.hoveredTile = this.grid.swapWithExtraTile(tile);
     } else if (tile !== this.grid.hoveredTile && this.grid.hoveredTile) {
-      this.clearHoveredTile(ctx);
+      this.clearHoveredTile();
+    }
+    this.redrawGrid(ctx);
+  }
+
+  private clearHoveredTile(): void {
+    if (this.grid.hoveredTile) {
+      this.grid.swapWithExtraTile(this.grid.hoveredTile);
+      this.grid.hoveredTile = null;
     }
   }
 
@@ -54,54 +62,29 @@ class GameEngine {
     screenX: number,
     screenY: number
   ): void {
-    if (this.handleExtraTileClick(ctx, screenX, screenY)) return;
-
-    const tile = this.grid.getTile(screenX, screenY);
-    if (tile && this.isValidEdgeTile(tile)) {
-      this.grid.shiftRow(this.grid.hoveredTile!, "SOUTH");
-      this.redrawGrid(ctx);
-    }
-  }
-
-  private clearHoveredTile(ctx: CanvasRenderingContext2D): void {
-    if (this.grid.hoveredTile) {
-      this.grid.swapWithExtraTile(this.grid.hoveredTile);
-      this.grid.hoveredTile = null;
-      this.redrawGrid(ctx);
-    }
-  }
-
-  private setHoveredTile(tile: Tile, ctx: CanvasRenderingContext2D): void {
-    if (this.grid.extraTile) {
-      this.grid.hoveredTile = this.grid.swapWithExtraTile(tile);
-      this.redrawGrid(ctx);
-    }
-  }
-
-  private isValidEdgeTile(tile: Tile): boolean {
-    const { x, y } = tile.pos;
-    return this.grid.isEdge(x, y) && this.grid.isEvenTile(x, y);
-  }
-
-  private handleExtraTileClick(
-    ctx: CanvasRenderingContext2D,
-    screenX: number,
-    screenY: number
-  ): boolean {
-    const extraTile = this.grid.extraTile;
-    if (!extraTile) return false;
-
-    const isoCoords = extraTile.screenToIso(screenX, screenY, this.worldWidth);
-    if (
-      isoCoords &&
-      extraTile.pos.x === isoCoords.x &&
-      extraTile.pos.y === isoCoords.y
-    ) {
+    if (!this.slidingOn) return;
+    const extraTile = this.grid.getExtraTile(screenX, screenY);
+    if (extraTile) {
       this.grid.rotateTile(extraTile);
       this.redrawGrid(ctx);
-      return true;
+      return;
     }
-    return false;
+
+    const tile = this.grid.getTile(screenX, screenY);
+
+    if (
+      tile &&
+      this.grid.hoveredTile &&
+      this.grid.isEdge(tile.pos.x, tile.pos.y) &&
+      this.grid.isEvenTile(tile.pos.x, tile.pos.y) &&
+      !this.grid.isCorner(tile.pos.x, tile.pos.y)
+    ) {
+      this.grid.shiftAndDisable(tile);
+      this.grid.swapWithExtraTile(this.grid.hoveredTile!);
+      this.grid.hoveredTile = null;
+      this.redrawGrid(ctx);
+      // this.slidingOn = false;
+    }
   }
 }
 

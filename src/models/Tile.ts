@@ -1,6 +1,6 @@
 import { Point } from "./index";
 
-type TileType = "FIXED" | "MOVABLE" | "ACTION" | "EMPTY";
+type TileType = "FIXED" | "MOVABLE" | "EMPTY" | "ENABLED" | "DISABLED";
 
 class Tile {
   constructor(
@@ -24,18 +24,27 @@ class Tile {
       pos,
       colors.top,
       this.drawTopFace.bind(this),
-      this.tileType === "ACTION"
+      this.tileType === "ENABLED" || this.tileType === "DISABLED"
     );
     this.drawFace(ctx, pos, colors.left, this.drawLeftFace.bind(this));
     this.drawFace(ctx, pos, colors.right, this.drawRightFace.bind(this));
   }
 
   private getTileColors() {
-    const isAction = this.tileType === "ACTION";
+    const isDisabled = this.tileType === "DISABLED";
+    const isEnabled = this.tileType === "ENABLED";
+
+    if (isDisabled) {
+      return {
+        top: "rgba(255, 99, 132, 0.3)",
+        left: "rgba(220, 20, 60, 0.3)",
+        right: "rgba(139, 0, 0, 0.3)",
+      };
+    }
     return {
-      top: isAction ? "rgba(144, 238, 144, 0.3)" : "#ffdb4d",
-      left: isAction ? "rgba(144, 238, 144, 0.3)" : "#4d7224",
-      right: isAction ? "rgba(144, 238, 144, 0.3)" : "#2f4b13",
+      top: isEnabled ? "rgba(144, 238, 144, 0.3)" : "#ffdb4d",
+      left: isEnabled ? "rgba(144, 238, 144, 0.3)" : "#4d7224",
+      right: isEnabled ? "rgba(144, 238, 144, 0.3)" : "#2f4b13",
     };
   }
 

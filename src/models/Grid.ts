@@ -364,6 +364,57 @@ class Grid {
 
     return this.tiles[tilePos.x][tilePos.y];
   }
+
+  public riseConnectedTiles(tile: Tile) {
+    console.log("Rising connected tiles");
+    this.isConnected(tile);
+  }
+
+  private isConnected(tile: Tile, visited: Set<string> = new Set()) {
+    const { pos, paths } = tile;
+    const x = pos.x;
+    const y = pos.y;
+    console.log("Tile at", x, y, "has paths", paths);
+
+    const key = `${x},${y}`;
+    if (visited.has(key)) return;
+    visited.add(key);
+
+    console.log("Visited", visited);
+    tile.depth = 20;
+
+    if (
+      paths.includes("NORTH") &&
+      y > 1 &&
+      this.tiles[x][y - 1].paths.includes("SOUTH")
+    ) {
+      this.isConnected(this.tiles[x][y - 1], visited);
+    }
+
+    if (
+      paths.includes("SOUTH") &&
+      y < this.cols - 2 &&
+      this.tiles[x][y + 1].paths.includes("NORTH")
+    ) {
+      this.isConnected(this.tiles[x][y + 1], visited);
+    }
+
+    if (
+      paths.includes("EAST") &&
+      x < this.rows - 2 &&
+      this.tiles[x + 1][y].paths.includes("WEST")
+    ) {
+      this.isConnected(this.tiles[x + 1][y], visited);
+    }
+
+    if (
+      paths.includes("WEST") &&
+      x > 1 &&
+      this.tiles[x - 1][y].paths.includes("EAST")
+    ) {
+      this.isConnected(this.tiles[x - 1][y], visited);
+    }
+  }
 }
 
 export default Grid;

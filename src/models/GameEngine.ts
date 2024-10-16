@@ -13,14 +13,14 @@ class GameEngine {
     tileDepth: number
   ) {
     this.grid = new Grid(worldWidth, 7, 7, tileWidth, tileHeight, tileDepth);
-    this.player = new Player({ x: 0, y: 0 }, new Image());
+    this.player = new Player({ x: 7, y: 1 }, new Image());
   }
 
   async start(ctx: CanvasRenderingContext2D): Promise<void> {
     try {
       await this.grid.init();
       this.redrawGrid(ctx);
-      this.player.draw(ctx, this.grid.tileWidth);
+      // this.player.draw(ctx, this.grid.tileWidth);
     } catch (error) {
       console.error("Error occurred during game start:", error);
     }
@@ -29,7 +29,7 @@ class GameEngine {
   redrawGrid(ctx: CanvasRenderingContext2D): void {
     ctx.clearRect(0, 0, this.worldWidth, this.worldHeight);
     this.grid.draw(ctx);
-    this.player.draw(ctx, this.grid.tileWidth);
+    // this.player.draw(ctx, this.grid.tileWidth);
   }
 
   handleMouseHover(
@@ -75,7 +75,7 @@ class GameEngine {
     }
 
     const tile = this.grid.getTile(screenX, screenY);
-
+    console.log("Clicked tile position:", tile?.pos.x, tile?.pos.y);
     if (
       tile &&
       this.grid.hoveredTile &&
@@ -84,10 +84,15 @@ class GameEngine {
       !this.grid.isCorner(tile.pos.x, tile.pos.y)
     ) {
       this.grid.shiftAndDisable(tile);
+
       this.grid.swapWithExtraTile(this.grid.hoveredTile!);
       this.grid.hoveredTile = null;
+
+      const playerPos = this.player.pos;
+      this.grid.riseConnectedTiles(this.grid.tiles[playerPos.x][playerPos.y]);
+
       this.redrawGrid(ctx);
-      this.slidingOn = false;
+      // this.slidingOn = false;
     }
   }
 }

@@ -17,15 +17,12 @@ class Tile {
     if (this.tileType === "EMPTY") return;
 
     const pos = this.isoToScreen(this.pos.x, this.pos.y, windowSize);
+    pos.y = this.depth == 20 ? pos.y - 10 : pos.y;
     const colors = this.getTileColors();
+    const isFilled =
+      this.tileType === "ENABLED" || this.tileType === "DISABLED";
 
-    this.drawFace(
-      ctx,
-      pos,
-      colors.top,
-      this.drawTopFace.bind(this),
-      this.tileType === "ENABLED" || this.tileType === "DISABLED"
-    );
+    this.drawFace(ctx, pos, colors.top, this.drawTopFace.bind(this), isFilled);
     this.drawFace(ctx, pos, colors.left, this.drawLeftFace.bind(this));
     this.drawFace(ctx, pos, colors.right, this.drawRightFace.bind(this));
   }
@@ -42,7 +39,7 @@ class Tile {
       };
     }
     return {
-      top: isEnabled ? "rgba(144, 238, 144, 0.3)" : "#ffdb4d",
+      top: isEnabled ? "rgba(144, 238, 144, 0.3)" : "rgba(255, 99, 132, 0.3)",
       left: isEnabled ? "rgba(144, 238, 144, 0.3)" : "#4d7224",
       right: isEnabled ? "rgba(144, 238, 144, 0.3)" : "#2f4b13",
     };

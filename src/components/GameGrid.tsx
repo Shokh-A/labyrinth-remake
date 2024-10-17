@@ -6,6 +6,7 @@ const WORLD_HEIGHT = 600;
 const TILE_WIDTH = 100;
 const TILE_HEIGHT = 50;
 const TILE_DEPTH = 10;
+const NUM_OF_COLLECTIBLES = 4;
 
 const GameGrid: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -15,7 +16,8 @@ const GameGrid: React.FC = () => {
       WORLD_HEIGHT,
       TILE_WIDTH,
       TILE_HEIGHT,
-      TILE_DEPTH
+      TILE_DEPTH,
+      NUM_OF_COLLECTIBLES
     )
   );
 

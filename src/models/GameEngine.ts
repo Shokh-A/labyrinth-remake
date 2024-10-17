@@ -1,35 +1,37 @@
-import { Grid, Player } from "./index";
+import { Grid, Player, Tile } from "./index";
 
 class GameEngine {
   private readonly grid: Grid;
   private slidingOn: boolean = true;
   private player: Player;
+  private numOfCollectibles: number = 0;
 
   constructor(
-    private readonly worldWidth: number,
-    private readonly worldHeight: number,
+    worldWidth: number,
+    worldHeight: number,
     tileWidth: number,
     tileHeight: number,
-    tileDepth: number
+    tileDepth: number,
+    numOfCollectibles: number
   ) {
     this.grid = new Grid(worldWidth, 7, 7, tileWidth, tileHeight, tileDepth);
-    this.player = new Player({ x: 7, y: 1 }, new Image());
+    this.player = new Player({ x: 1, y: 1 }, new Image());
+    this.numOfCollectibles = numOfCollectibles;
   }
 
   async start(ctx: CanvasRenderingContext2D): Promise<void> {
     try {
-      await this.grid.init();
+      await this.grid.init(this.numOfCollectibles);
       this.redrawGrid(ctx);
-      // this.player.draw(ctx, this.grid.tileWidth);
+      this.player.draw(ctx, this.grid.tileWidth);
     } catch (error) {
       console.error("Error occurred during game start:", error);
     }
   }
 
   redrawGrid(ctx: CanvasRenderingContext2D): void {
-    ctx.clearRect(0, 0, this.worldWidth, this.worldHeight);
     this.grid.draw(ctx);
-    // this.player.draw(ctx, this.grid.tileWidth);
+    this.player.draw(ctx, this.grid.tileWidth);
   }
 
   handleMouseHover(
@@ -67,15 +69,14 @@ class GameEngine {
     screenY: number
   ): void {
     if (!this.slidingOn) return;
-    const extraTile = this.grid.getExtraTile(screenX, screenY);
-    if (extraTile) {
-      this.grid.rotateTile(extraTile);
+    const tile = this.grid.getTile(screenX, screenY);
+    console.log("Clicked tile position:", tile?.pos.x, tile?.pos.y);
+    if (tile && tile === this.grid.extraTile) {
+      this.grid.rotateTile(tile);
       this.redrawGrid(ctx);
       return;
     }
 
-    const tile = this.grid.getTile(screenX, screenY);
-    console.log("Clicked tile position:", tile?.pos.x, tile?.pos.y);
     if (
       tile &&
       this.grid.hoveredTile &&
@@ -83,17 +84,21 @@ class GameEngine {
       this.grid.isEvenTile(tile.pos.x, tile.pos.y) &&
       !this.grid.isCorner(tile.pos.x, tile.pos.y)
     ) {
-      this.grid.shiftAndDisable(tile);
-
-      this.grid.swapWithExtraTile(this.grid.hoveredTile!);
-      this.grid.hoveredTile = null;
-
-      const playerPos = this.player.pos;
-      this.grid.riseConnectedTiles(this.grid.tiles[playerPos.x][playerPos.y]);
-
+      this.shiftTiles(tile);
       this.redrawGrid(ctx);
-      // this.slidingOn = false;
     }
+  }
+
+  shiftTiles(tile: Tile): void {
+    this.grid.shiftAndDisable(tile);
+
+    this.grid.swapWithExtraTile(this.grid.hoveredTile!);
+    this.grid.hoveredTile = null;
+
+    const playerPos = this.player.pos;
+    this.grid.riseConnectedTiles(this.grid.tiles[playerPos.x][playerPos.y]);
+
+    // this.slidingOn = false;
   }
 }
 

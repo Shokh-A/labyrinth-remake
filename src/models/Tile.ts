@@ -1,4 +1,4 @@
-import { Point } from "./index";
+import { Collectible, Point } from "./index";
 
 type TileType = "FIXED" | "MOVABLE" | "EMPTY" | "ENABLED" | "DISABLED";
 
@@ -10,13 +10,13 @@ class Tile {
     public depth: number,
     public pathImg: HTMLImageElement,
     public paths: string[] = [],
-    public tileType: TileType
+    public tileType: TileType,
+    public collectible: Collectible | null = null
   ) {}
 
-  draw(ctx: CanvasRenderingContext2D, windowSize: number) {
+  draw(ctx: CanvasRenderingContext2D, pos: Point) {
     if (this.tileType === "EMPTY") return;
 
-    const pos = this.isoToScreen(this.pos.x, this.pos.y, windowSize);
     pos.y = this.depth == 20 ? pos.y - 10 : pos.y;
     const colors = this.getTileColors();
     const isFilled =
@@ -95,22 +95,11 @@ class Tile {
     ctx.lineTo(pos.x + this.width / 2, pos.y + this.height / 2 + this.depth);
   }
 
-  isoToScreen(x: number, y: number, windowSize: number): Point {
-    return new Point(
-      (x - y) * (this.width / 2) + windowSize / 2,
-      (x + y) * (this.height / 2)
-    );
-  }
-
-  screenToIso(
-    screenX: number,
-    screenY: number,
-    windowSize: number
-  ): { x: number; y: number } {
-    const centeredX = screenX - windowSize / 2;
-    const x = (centeredX / (this.width / 2) + screenY / (this.height / 2)) / 2;
-    const y = (screenY / (this.height / 2) - centeredX / (this.width / 2)) / 2;
-    return { x: Math.floor(x), y: Math.floor(y) };
+  public setPos(pos: Point) {
+    this.pos = pos;
+    if (this.collectible) {
+      this.collectible.gridPos = pos;
+    }
   }
 }
 

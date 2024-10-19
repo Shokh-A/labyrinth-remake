@@ -53,7 +53,7 @@ class GameEngine {
 
   private drawPlayers(ctx: CanvasRenderingContext2D): void {
     for (const player of this.players) {
-      player.draw(ctx, this.grid.tileWidth);
+      player.draw(ctx, player.pos);
     }
   }
 
@@ -135,7 +135,7 @@ class GameEngine {
       tile.player = curPlayer;
       if (
         this.grid.collectibles.length !== 0 &&
-        this.grid.collectibles[0].gridPos === curPlayer?.pos
+        this.grid.collectibles[0].pos === curPlayer?.pos
       ) {
         console.log("Collecting...");
         this.grid.collectibles.splice(0, 1);

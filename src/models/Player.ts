@@ -1,11 +1,12 @@
-import { Point } from "./index";
+import GameObject from "./GameObject";
+import Point from "./Point";
 
-class Player {
-  public offsetY: number = 0;
+class Player extends GameObject {
+  constructor(pos: Point, public img: HTMLImageElement) {
+    super(pos, 70, 70);
+  }
 
-  constructor(public pos: Point, public img: HTMLImageElement) {}
-
-  draw(ctx: CanvasRenderingContext2D, windowSize: number) {
+  draw(ctx: CanvasRenderingContext2D, poss: Point) {
     const sx = 105;
     const sy = 15;
     const pos = this.isoToScreen(this.pos);

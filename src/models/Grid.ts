@@ -241,7 +241,7 @@ class Grid {
 
   drawCrystals(ctx: CanvasRenderingContext2D) {
     this.collectibles.forEach((collectible) => {
-      const pos = this.isoToScreen(collectible.gridPos);
+      const pos = this.isoToScreen(collectible.pos);
       pos.x = pos.x - 40 / 2;
       pos.y = pos.y - 2;
       collectible.draw(ctx, pos);

@@ -1,21 +1,25 @@
-import { Collectible, Player, Point } from "./index";
+import Collectible from "./Collectible";
+import GameObject from "./GameObject";
+import Player from "./Player";
+import Point from "./Point";
 
 type TileType = "FIXED" | "MOVABLE" | "EMPTY" | "ENABLED" | "DISABLED";
 
-class Tile {
+class Tile extends GameObject {
   constructor(
-    public pos: Point,
-    public width: number,
-    public height: number,
+    pos: Point,
+    width: number,
+    height: number,
     public depth: number,
     public pathImg: HTMLImageElement,
     public paths: string[] = [],
     public tileType: TileType,
     public collectible: Collectible | null = null,
     public player: Player | null = null,
-    public isConnected: boolean = false,
-    public offsetY: number = 0
-  ) {}
+    public isConnected: boolean = false
+  ) {
+    super(pos, width, height);
+  }
 
   draw(ctx: CanvasRenderingContext2D, pos: Point) {
     if (this.tileType === "EMPTY") return;
@@ -115,7 +119,7 @@ class Tile {
   public setPos(pos: Point) {
     this.pos = pos;
     if (this.collectible) {
-      this.collectible.gridPos = pos;
+      this.collectible.pos = pos;
     }
     if (this.player) {
       console.log("Setting player pos to", pos);

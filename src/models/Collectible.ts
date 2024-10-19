@@ -1,17 +1,18 @@
-import { Point } from "./index";
+import GameObject from "./GameObject";
+import Point from "./Point";
 
-class Collectible {
+class Collectible extends GameObject {
   constructor(
     public srcPos: Point,
-    public gridPos: Point,
-    public width: number,
-    public height: number,
+    gridPos: Point,
+    width: number,
+    height: number,
     public img: HTMLImageElement,
     public collected: boolean = false,
     private srcWidth: number = 512,
-    private srcHeight: number = 512,
-    public offsetY: number = 0
+    private srcHeight: number = 512
   ) {
+    super(gridPos, width, height);
     if (srcPos.x > 14) {
       this.srcPos.x = Math.round(srcPos.x / 14) * this.srcWidth;
       this.srcPos.y = (srcPos.y % 14) * this.srcHeight;

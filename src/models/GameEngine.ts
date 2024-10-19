@@ -1,5 +1,6 @@
 import { preloadImage } from "../services/imageLoader";
 import { Grid, Player, Tile } from "./index";
+import playerImg from "../assets/images/sprites/CharacterSheet_CharacterFront.png";
 
 class GameEngine {
   private readonly grid: Grid;
@@ -24,9 +25,7 @@ class GameEngine {
   ): Promise<void> {
     try {
       await this.grid.init(numOfCollectibles);
-      const img = await preloadImage(
-        "/images/sprites/CharacterSheet_CharacterFront.png"
-      );
+      const img = await preloadImage(playerImg);
 
       const corners = [
         { x: 1, y: 1 },
@@ -143,7 +142,7 @@ class GameEngine {
 
       this.grid.liftDownTiles();
       this.state = "SHIFTING";
-      this.curPlayerIndex = (this.curPlayerIndex + 1) % 4;
+      this.curPlayerIndex = (this.curPlayerIndex + 1) % 2;
 
       this.draw(ctx);
     }

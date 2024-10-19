@@ -1,40 +1,16 @@
 import { preloadImage, preloadImages } from "../services/imageLoader";
 import { Collectible, Point, Tile } from "./index";
-import northEastWest from "/images/paths/Detour_NEW.png";
-import northSouthEast from "/images/paths/Detour_NSE.png";
-import northSouthWest from "/images/paths/Detour_NSW.png";
-import southEastWest from "/images/paths/Detour_SEW.png";
-import eastWest from "/images/paths/Straight_EW.png";
-import northSouth from "/images/paths/Straight_NS.png";
-import northEast from "/images/paths/Turn_NE.png";
-import northWest from "/images/paths/Turn_NW.png";
-import southEast from "/images/paths/Turn_SE.png";
-import southWest from "/images/paths/Turn_SW.png";
-
-const paths_map = {
-  "paths/Straight_EW.png": { src: eastWest, directions: ["EAST", "WEST"] },
-  "paths/Straight_NS.png": { northSouth, directions: ["NORTH", "SOUTH"] },
-  "paths/Turn_NW.png": { northEast, directions: ["NORTH", "EAST"] },
-  "paths/Turn_NE.png": { southEast, directions: ["SOUTH", "EAST"] },
-  "paths/Turn_SE.png": { southWest, directions: ["SOUTH", "WEST"] },
-  "paths/Turn_SW.png": { northWest, directions: ["NORTH", "WEST"] },
-  "paths/Detour_NEW.png": {
-    northSouthEast,
-    directions: ["NORTH", "SOUTH", "EAST"],
-  },
-  "paths/Detour_NSE.png": {
-    southEastWest,
-    directions: ["SOUTH", "EAST", "WEST"],
-  },
-  "paths/Detour_SEW.png": {
-    northSouthWest,
-    directions: ["NORTH", "SOUTH", "WEST"],
-  },
-  "paths/Detour_NSW.png": {
-    northEastWest,
-    directions: ["NORTH", "EAST", "WEST"],
-  },
-};
+import northEastWest from "../assets/images/paths/Detour_NEW.png";
+import northSouthEast from "../assets/images/paths/Detour_NSE.png";
+import northSouthWest from "../assets/images/paths/Detour_NSW.png";
+import southEastWest from "../assets/images/paths/Detour_SEW.png";
+import eastWest from "../assets/images/paths/Straight_EW.png";
+import northSouth from "../assets/images/paths/Straight_NS.png";
+import northEast from "../assets/images/paths/Turn_NE.png";
+import northWest from "../assets/images/paths/Turn_NW.png";
+import southEast from "../assets/images/paths/Turn_SE.png";
+import southWest from "../assets/images/paths/Turn_SW.png";
+import crystals from "../assets/images/crystals/Crystals.png";
 
 class Grid {
   tiles: Tile[][];
@@ -70,10 +46,19 @@ class Grid {
   }
 
   async init(numOfCollectibles: number) {
-    this.images = await preloadImages();
-    this.crystals = await preloadImage(
-      "/images/crystals/512x512 Crystals Transparent.png"
-    );
+    this.images = await preloadImages([
+      eastWest,
+      northSouth,
+      northEast,
+      northWest,
+      southEast,
+      southWest,
+      northSouthEast,
+      southEastWest,
+      northSouthWest,
+      northEastWest,
+    ]);
+    this.crystals = await preloadImage(crystals);
     this.initializeTiles();
     this.initializeExtraTile();
     this.initializeCollectibles(numOfCollectibles);
@@ -195,24 +180,25 @@ class Grid {
       WEST: "NORTH",
     };
 
-    tile.paths = tile.paths.map(
-      (direction) => rotationMap[direction] || direction
-    );
+    tile.paths = tile.paths.map((direction) => rotationMap[direction]);
 
     const imgRotationMap: { [key: string]: string } = {
-      "paths/Straight_EW.png": northSouth,
-      "paths/Straight_NS.png": eastWest,
-      "paths/Turn_NW.png": northEast,
-      "paths/Turn_NE.png": southEast,
-      "paths/Turn_SE.png": southWest,
-      "paths/Turn_SW.png": northWest,
-      "paths/Detour_NEW.png": northSouthEast,
-      "paths/Detour_NSE.png": southEastWest,
-      "paths/Detour_SEW.png": northSouthWest,
-      "paths/Detour_NSW.png": northEastWest,
+      "Straight_EW.png": northSouth,
+      "Straight_NS.png": eastWest,
+      "Turn_NW.png": northEast,
+      "Turn_NE.png": southEast,
+      "Turn_SE.png": southWest,
+      "Turn_SW.png": northWest,
+      "Detour_NEW.png": northSouthEast,
+      "Detour_NSE.png": southEastWest,
+      "Detour_SEW.png": northSouthWest,
+      "Detour_NSW.png": northEastWest,
     };
-    const imgSrc = tile.pathImg.src.split("/").slice(-2).join("/");
-    tile.pathImg = this.images.get(imgRotationMap[imgSrc]) as HTMLImageElement;
+
+    const pathName = tile.pathImg.src.split("/").slice(-1)[0];
+    tile.pathImg = this.images.get(
+      imgRotationMap[pathName]
+    ) as HTMLImageElement;
   }
 
   shiftAndDisable(tile: Tile) {

@@ -1,15 +1,40 @@
 import { preloadImage, preloadImages } from "../services/imageLoader";
 import { Collectible, Point, Tile } from "./index";
-import eastWest from "/images/paths/Road 1.png";
-import northSouthWest from "/images/paths/Road 10 Detour.png";
-import northSouthEast from "/images/paths/Road 11 Detour.png";
-import northSouth from "/images/paths/Road 2.png";
-import southEast from "/images/paths/Road 4 Turn.png";
-import southWest from "/images/paths/Road 5 Turn.png";
-import northWest from "/images/paths/Road 6 Turn.png";
-import northEast from "/images/paths/Road 7 Turn.png";
-import southEastWest from "/images/paths/Road 8 Detour.png";
-import northEastWest from "/images/paths/Road 9 Detour.png";
+import northEastWest from "/images/paths/Detour_NEW.png";
+import northSouthEast from "/images/paths/Detour_NSE.png";
+import northSouthWest from "/images/paths/Detour_NSW.png";
+import southEastWest from "/images/paths/Detour_SEW.png";
+import eastWest from "/images/paths/Straight_EW.png";
+import northSouth from "/images/paths/Straight_NS.png";
+import northEast from "/images/paths/Turn_NE.png";
+import northWest from "/images/paths/Turn_NW.png";
+import southEast from "/images/paths/Turn_SE.png";
+import southWest from "/images/paths/Turn_SW.png";
+
+const paths_map = {
+  "paths/Straight_EW.png": { src: eastWest, directions: ["EAST", "WEST"] },
+  "paths/Straight_NS.png": { northSouth, directions: ["NORTH", "SOUTH"] },
+  "paths/Turn_NW.png": { northEast, directions: ["NORTH", "EAST"] },
+  "paths/Turn_NE.png": { southEast, directions: ["SOUTH", "EAST"] },
+  "paths/Turn_SE.png": { southWest, directions: ["SOUTH", "WEST"] },
+  "paths/Turn_SW.png": { northWest, directions: ["NORTH", "WEST"] },
+  "paths/Detour_NEW.png": {
+    northSouthEast,
+    directions: ["NORTH", "SOUTH", "EAST"],
+  },
+  "paths/Detour_NSE.png": {
+    southEastWest,
+    directions: ["SOUTH", "EAST", "WEST"],
+  },
+  "paths/Detour_SEW.png": {
+    northSouthWest,
+    directions: ["NORTH", "SOUTH", "WEST"],
+  },
+  "paths/Detour_NSW.png": {
+    northEastWest,
+    directions: ["NORTH", "EAST", "WEST"],
+  },
+};
 
 class Grid {
   tiles: Tile[][];
@@ -65,12 +90,26 @@ class Grid {
           this.tileWidth,
           this.tileHeight,
           this.tileDepth,
-          this.images.get(decodeURIComponent(imgSrc)) as HTMLImageElement,
+          this.images.get(imgSrc) as HTMLImageElement,
           paths,
           this.getTileType(row, col)
         );
       }
     }
+  }
+
+  private getTileType(row: number, col: number) {
+    if (
+      this.isCorner(row, col) ||
+      (this.isEdge(row, col) && !this.isEvenTile(row, col))
+    ) {
+      return "EMPTY";
+    } else if (this.isEdge(row, col) && this.isEvenTile(row, col)) {
+      return "ENABLED";
+    } else if (this.isOddTile(row, col)) {
+      return "FIXED";
+    }
+    return "MOVABLE";
   }
 
   private initializeExtraTile() {
@@ -80,7 +119,7 @@ class Grid {
       this.tileWidth,
       this.tileHeight,
       this.tileDepth,
-      this.images.get(decodeURIComponent(imgSrc)) as HTMLImageElement,
+      this.images.get(imgSrc) as HTMLImageElement,
       paths,
       "MOVABLE"
     );
@@ -138,25 +177,6 @@ class Grid {
     this.drawCrystals(ctx);
   }
 
-  // animateTiles(ctx: CanvasRenderingContext2D) {
-  //   let firstRow = this.tiles[1];
-
-  //   ctx.clearRect(0, 0, this.worldWidth, this.worldWidth);
-  //   const animate = () => {
-  //     firstRow.forEach((tile) => {
-  //       const pos = this.isoToScreen(tile.pos.x, tile.pos.y, this.worldWidth);
-  //       // pos.x += 10;
-  //       tile.pos.x += 0.1;
-  //       tile.draw(ctx, pos);
-  //     });
-  //     console.log("Animating");
-  //     if (firstRow[0].pos.x <= 7) {
-  //       requestAnimationFrame(animate);
-  //     }
-  //   };
-  //   animate();
-  // }
-
   getTile(screenX: number, screenY: number): Tile | null {
     const { x, y } = this.screenToIso(screenX, screenY);
     if (this.isWithinGrid(x, y)) {
@@ -180,24 +200,19 @@ class Grid {
     );
 
     const imgRotationMap: { [key: string]: string } = {
-      "/paths/Road 1.png": northSouth,
-      "/paths/Road 2.png": eastWest,
-      "/paths/Road 4 Turn.png": southWest,
-      "/paths/Road 5 Turn.png": northWest,
-      "/paths/Road 6 Turn.png": northEast,
-      "/paths/Road 7 Turn.png": southEast,
-      "/paths/Road 8 Detour.png": northSouthWest,
-      "/paths/Road 9 Detour.png": northSouthEast,
-      "/paths/Road 10 Detour.png": northEastWest,
-      "/paths/Road 11 Detour.png": southEastWest,
+      "paths/Straight_EW.png": northSouth,
+      "paths/Straight_NS.png": eastWest,
+      "paths/Turn_NW.png": northEast,
+      "paths/Turn_NE.png": southEast,
+      "paths/Turn_SE.png": southWest,
+      "paths/Turn_SW.png": northWest,
+      "paths/Detour_NEW.png": northSouthEast,
+      "paths/Detour_NSE.png": southEastWest,
+      "paths/Detour_SEW.png": northSouthWest,
+      "paths/Detour_NSW.png": northEastWest,
     };
-    const imgSrc = decodeURIComponent(
-      "/" + tile.pathImg.src.split("/").slice(-2).join("/")
-    );
-
-    tile.pathImg = this.images.get(
-      decodeURIComponent(imgRotationMap[imgSrc])
-    ) as HTMLImageElement;
+    const imgSrc = tile.pathImg.src.split("/").slice(-2).join("/");
+    tile.pathImg = this.images.get(imgRotationMap[imgSrc]) as HTMLImageElement;
   }
 
   shiftAndDisable(tile: Tile) {
@@ -311,20 +326,6 @@ class Grid {
     return row % 2 === 1 && col % 2 === 1;
   }
 
-  public getTileType(row: number, col: number) {
-    if (
-      this.isCorner(row, col) ||
-      (this.isEdge(row, col) && !this.isEvenTile(row, col))
-    ) {
-      return "EMPTY";
-    } else if (this.isEdge(row, col) && this.isEvenTile(row, col)) {
-      return "ENABLED";
-    } else if (this.isOddTile(row, col)) {
-      return "FIXED";
-    }
-    return "MOVABLE";
-  }
-
   private imageSelector(x: number, y: number): [string, string[]] {
     switch (true) {
       case x === 0 && y === 0:
@@ -372,39 +373,38 @@ class Grid {
     // If paths are connected increase the depth of the tile
     // This hard coded array is used to determine the paths of the tiles
     // Works only with 7x7 grid
-    const SE_PATHS = new Array(4).fill([southEast, ["SOUTH", "EAST"]]);
-    const SW_PATHS = new Array(4).fill([southWest, ["SOUTH", "WEST"]]);
-    const NW_PATHS = new Array(4).fill([northWest, ["NORTH", "WEST"]]);
-    const NE_PATHS = new Array(3).fill([northEast, ["NORTH", "EAST"]]);
-    const movablePaths1 = SE_PATHS.concat(SW_PATHS, NW_PATHS, NE_PATHS);
+    const movablePathsTurn = [
+      ...this.createPaths(4, southEast, ["SOUTH", "EAST"]),
+      ...this.createPaths(4, southWest, ["SOUTH", "WEST"]),
+      ...this.createPaths(4, northWest, ["NORTH", "WEST"]),
+      ...this.createPaths(3, northEast, ["NORTH", "EAST"]),
+    ];
 
-    const EW_PATHS = new Array(6).fill([eastWest, ["EAST", "WEST"]]);
-    const NS_PATHS = new Array(7).fill([northSouth, ["NORTH", "SOUTH"]]);
-    const movablePaths2 = EW_PATHS.concat(NS_PATHS);
+    const movablePathsStraight = [
+      ...this.createPaths(6, eastWest, ["EAST", "WEST"]),
+      ...this.createPaths(7, northSouth, ["NORTH", "SOUTH"]),
+    ];
 
-    const SEW_PATHS = new Array(1).fill([
-      southEastWest,
-      ["SOUTH", "EAST", "WEST"],
-    ]);
-    const NEW_PATHS = new Array(2).fill([
-      northEastWest,
-      ["NORTH", "EAST", "WEST"],
-    ]);
-    const NSW_PATHS = new Array(1).fill([
-      northSouthWest,
-      ["NORTH", "SOUTH", "WEST"],
-    ]);
-    const NSE_PATHS = new Array(2).fill([
-      northSouthEast,
-      ["NORTH", "SOUTH", "EAST"],
-    ]);
-    const movablePaths3 = SEW_PATHS.concat(NEW_PATHS, NSW_PATHS, NSE_PATHS);
+    const movablePathsDetour = [
+      ...this.createPaths(1, southEastWest, ["SOUTH", "EAST", "WEST"]),
+      ...this.createPaths(2, northEastWest, ["NORTH", "EAST", "WEST"]),
+      ...this.createPaths(1, northSouthWest, ["NORTH", "SOUTH", "WEST"]),
+      ...this.createPaths(2, northSouthEast, ["NORTH", "SOUTH", "EAST"]),
+    ];
 
-    const movablePaths4 = movablePaths1.concat(movablePaths2, movablePaths3);
-    const randomIndex = Math.random() * movablePaths4.length;
-    const [removedPath] = movablePaths4.splice(randomIndex, 1);
+    const movablePaths = [
+      ...movablePathsTurn,
+      ...movablePathsStraight,
+      ...movablePathsDetour,
+    ];
+    const randomIndex = Math.random() * movablePaths.length;
+    const [removedPath] = movablePaths.splice(randomIndex, 1);
 
     return removedPath;
+  }
+
+  private createPaths(count: number, path: string, directions: string[]) {
+    return new Array(count).fill([path, directions]);
   }
 
   public swapWithExtraTile(tile: Tile): Tile {

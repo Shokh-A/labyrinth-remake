@@ -9,17 +9,17 @@ export function preloadImage(src: string): Promise<HTMLImageElement> {
 
 export async function preloadImages() {
   const sources = [
-    "/images/paths/Road 1.png",
-    "/images/paths/Road 2.png",
-    "/images/paths/Road 4 Turn.png",
-    "/images/paths/Road 5 Turn.png",
-    "/images/paths/Road 6 Turn.png",
-    "/images/paths/Road 7 Turn.png",
-    "/images/paths/Road 8 Detour.png",
-    "/images/paths/Road 9 Detour.png",
-    "/images/paths/Road 10 Detour.png",
-    "/images/paths/Road 11 Detour.png",
-    "/images/paths/Terrain 1.png",
+    "/images/paths/Straight_EW.png",
+    "/images/paths/Straight_NS.png",
+    "/images/paths/Turn_NE.png",
+    "/images/paths/Turn_NW.png",
+    "/images/paths/Turn_SE.png",
+    "/images/paths/Turn_SW.png",
+    "/images/paths/Detour_NEW.png",
+    "/images/paths/Detour_NSE.png",
+    "/images/paths/Detour_NSW.png",
+    "/images/paths/Detour_SEW.png",
+    "/images/paths/Grass.png",
   ];
   const images = new Map<string, HTMLImageElement>();
   for (const src of sources) {

@@ -17,7 +17,7 @@ class GameEngine {
     this.grid = new Grid(worldWidth, 7, 7, tileWidth, tileHeight, tileDepth);
   }
 
-  async start(
+  public async start(
     ctx: CanvasRenderingContext2D,
     numOfPlayers: number,
     numOfCollectibles: number
@@ -46,18 +46,18 @@ class GameEngine {
     }
   }
 
-  draw(ctx: CanvasRenderingContext2D): void {
+  private draw(ctx: CanvasRenderingContext2D): void {
     this.grid.draw(ctx);
     this.drawPlayers(ctx);
   }
 
-  drawPlayers(ctx: CanvasRenderingContext2D): void {
+  private drawPlayers(ctx: CanvasRenderingContext2D): void {
     for (const player of this.players) {
       player.draw(ctx, this.grid.tileWidth);
     }
   }
 
-  handleMouseHover(
+  public handleMouseHover(
     ctx: CanvasRenderingContext2D,
     screenX: number,
     screenY: number
@@ -86,7 +86,7 @@ class GameEngine {
     }
   }
 
-  handleMouseClick(
+  public handleMouseClick(
     ctx: CanvasRenderingContext2D,
     screenX: number,
     screenY: number
@@ -100,7 +100,7 @@ class GameEngine {
     }
   }
 
-  shiftOrRotateTiles(ctx: CanvasRenderingContext2D, tile: Tile): void {
+  private shiftOrRotateTiles(ctx: CanvasRenderingContext2D, tile: Tile): void {
     if (tile && tile === this.grid.extraTile) {
       this.grid.rotateTile(tile);
       this.draw(ctx);
@@ -128,7 +128,7 @@ class GameEngine {
     }
   }
 
-  movePlayer(ctx: CanvasRenderingContext2D, tile: Tile): void {
+  private movePlayer(ctx: CanvasRenderingContext2D, tile: Tile): void {
     const curPlayer = this.players[this.curPlayerIndex];
     if (tile?.isConnected) {
       curPlayer.pos = tile.pos;

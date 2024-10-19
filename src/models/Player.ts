@@ -10,20 +10,19 @@ class Player {
   }
 
   draw(ctx: CanvasRenderingContext2D, windowSize: number) {
-    // const pos = this.isoToScreen(this.pos.x, this.pos.y, windowSize);
-    // ctx.drawImage(this.img, pos.x, pos.y);
-    const image = new Image();
-    image.src = "/sprites/CharacterSheet_CharacterFront.png";
+    const sx = 105;
+    const sy = 15;
+    const pos = this.isoToScreen(this.pos);
+    pos.x = pos.x - 70 / 4;
+    pos.y = pos.y - 70 / 2;
+    ctx.drawImage(this.img, sx, sy, 350, 350, pos.x, pos.y, 70, 70);
+  }
 
-    image.onload = () => {
-      // Calculate the x and y position of the current frame in the sprite sheet
-      const sx = 105;
-      const sy = 15;
-
-      // ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.drawImage(image, sx, sy, 175, 350, 450 - 35 / 2, 70 / 4, 35, 70);
-    };
+  isoToScreen(pos: Point): Point {
+    return new Point(
+      (pos.x - pos.y) * (100 / 2) + 900 / 2,
+      (pos.x + pos.y) * (50 / 2)
+    );
   }
 }
 

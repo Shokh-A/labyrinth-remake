@@ -1,15 +1,15 @@
-import { Collectible, Point, Tile } from "./index";
-import eastWest from "/paths/Road 1.png";
-import northSouth from "/paths/Road 2.png";
 import { preloadImage, preloadImages } from "../services/imageLoader";
-import northSouthWest from "/paths/Road 10 Detour.png";
-import northSouthEast from "/paths/Road 11 Detour.png";
-import southEast from "/paths/Road 4 Turn.png";
-import southWest from "/paths/Road 5 Turn.png";
-import northWest from "/paths/Road 6 Turn.png";
-import northEast from "/paths/Road 7 Turn.png";
-import southEastWest from "/paths/Road 8 Detour.png";
-import northEastWest from "/paths/Road 9 Detour.png";
+import { Collectible, Point, Tile } from "./index";
+import eastWest from "/images/paths/Road 1.png";
+import northSouthWest from "/images/paths/Road 10 Detour.png";
+import northSouthEast from "/images/paths/Road 11 Detour.png";
+import northSouth from "/images/paths/Road 2.png";
+import southEast from "/images/paths/Road 4 Turn.png";
+import southWest from "/images/paths/Road 5 Turn.png";
+import northWest from "/images/paths/Road 6 Turn.png";
+import northEast from "/images/paths/Road 7 Turn.png";
+import southEastWest from "/images/paths/Road 8 Detour.png";
+import northEastWest from "/images/paths/Road 9 Detour.png";
 
 class Grid {
   tiles: Tile[][];
@@ -38,7 +38,7 @@ class Grid {
       this.tileWidth,
       this.tileHeight,
       this.tileDepth,
-      null as any,
+      new Image(),
       [],
       "MOVABLE"
     );
@@ -47,7 +47,7 @@ class Grid {
   async init(numOfCollectibles: number) {
     this.images = await preloadImages();
     this.crystals = await preloadImage(
-      "/crystals/512x512 Crystals Transparent.png"
+      "/images/crystals/512x512 Crystals Transparent.png"
     );
     this.initializeTiles();
     this.initializeExtraTile();
@@ -58,7 +58,7 @@ class Grid {
     for (let row = 0; row < this.rows; row++) {
       for (let col = 0; col < this.cols; col++) {
         const [imgSrc, paths] = this.isEdge(row, col)
-          ? ["/paths/Terrain 1.png", []]
+          ? ["/images/paths/Terrain 1.png", []]
           : this.imageSelector(row - 1, col - 1);
         this.tiles[row][col] = new Tile(
           new Point(row, col),
@@ -407,7 +407,7 @@ class Grid {
     return removedPath;
   }
 
-  swapWithExtraTile(tile: Tile): Tile {
+  public swapWithExtraTile(tile: Tile): Tile {
     const tilePos = tile.pos;
     const extraTilePos = this.extraTile.pos;
 
@@ -418,6 +418,12 @@ class Grid {
     this.extraTile = tile;
 
     return this.tiles[tilePos.x][tilePos.y];
+  }
+
+  public liftDownTiles() {
+    this.tiles.flat().forEach((tile) => {
+      tile.isConnected = false;
+    });
   }
 
   public riseConnectedTiles(tile: Tile) {
@@ -433,7 +439,7 @@ class Grid {
     if (visited.has(key)) return;
     visited.add(key);
 
-    tile.depth = 20;
+    tile.isConnected = true;
 
     if (
       paths.includes("NORTH") &&

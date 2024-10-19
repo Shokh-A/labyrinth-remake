@@ -11,13 +11,19 @@ class Tile {
     public pathImg: HTMLImageElement,
     public paths: string[] = [],
     public tileType: TileType,
-    public collectible: Collectible | null = null
+    public collectible: Collectible | null = null,
+    public isConnected: boolean = false
   ) {}
 
   draw(ctx: CanvasRenderingContext2D, pos: Point) {
     if (this.tileType === "EMPTY") return;
 
-    pos.y = this.depth == 20 ? pos.y - 10 : pos.y;
+    if (this.isConnected) {
+      this.depth = 20;
+      pos.y -= 10;
+    } else {
+      this.depth = 10;
+    }
     const colors = this.getTileColors();
     const isFilled =
       this.tileType === "ENABLED" || this.tileType === "DISABLED";

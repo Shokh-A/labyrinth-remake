@@ -6,6 +6,7 @@ const WORLD_HEIGHT = 600;
 const TILE_WIDTH = 100;
 const TILE_HEIGHT = 50;
 const TILE_DEPTH = 10;
+const NUM_OF_PLAYERS = 2;
 const NUM_OF_COLLECTIBLES = 4;
 
 const GameGrid: React.FC = () => {
@@ -16,8 +17,7 @@ const GameGrid: React.FC = () => {
       WORLD_HEIGHT,
       TILE_WIDTH,
       TILE_HEIGHT,
-      TILE_DEPTH,
-      NUM_OF_COLLECTIBLES
+      TILE_DEPTH
     )
   );
 
@@ -26,7 +26,7 @@ const GameGrid: React.FC = () => {
     const ctx = canvas?.getContext("2d");
 
     if (!ctx || !canvas) return;
-    gameEngine.start(ctx);
+    gameEngine.start(ctx, NUM_OF_PLAYERS, NUM_OF_COLLECTIBLES);
   }, []);
 
   useEffect(() => {

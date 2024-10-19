@@ -24,19 +24,20 @@ class GameEngine {
     numOfCollectibles: number
   ): Promise<void> {
     try {
-      await this.grid.init(numOfCollectibles);
-      const img = await preloadImage(playerImg);
-
       const corners = [
         { x: 1, y: 1 },
         { x: 1, y: 7 },
         { x: 7, y: 1 },
         { x: 7, y: 7 },
       ];
+      const img = await preloadImage(playerImg);
       for (let i = 0; i < numOfPlayers; i++) {
         const player = new Player(corners[i], img);
         this.players.push(player);
       }
+
+      await this.grid.init(this.players, numOfCollectibles);
+
       this.state = "SHIFTING";
 
       this.draw(ctx);
@@ -114,7 +115,6 @@ class GameEngine {
       !this.grid.isCorner(tile.pos.x, tile.pos.y)
     ) {
       this.grid.shiftAndDisable(tile);
-
       this.grid.swapWithExtraTile(this.grid.hoveredTile!);
       this.grid.hoveredTile = null;
 
@@ -130,7 +130,9 @@ class GameEngine {
   private movePlayer(ctx: CanvasRenderingContext2D, tile: Tile): void {
     const curPlayer = this.players[this.curPlayerIndex];
     if (tile?.isConnected) {
+      this.grid.tiles[curPlayer.pos.x][curPlayer.pos.y].player = null;
       curPlayer.pos = tile.pos;
+      tile.player = curPlayer;
       if (
         this.grid.collectibles.length !== 0 &&
         this.grid.collectibles[0].gridPos === curPlayer?.pos
@@ -140,7 +142,7 @@ class GameEngine {
         tile.collectible = null;
       }
 
-      this.grid.liftDownTiles();
+      this.grid.lowerTiles();
       this.state = "SHIFTING";
       this.curPlayerIndex = (this.curPlayerIndex + 1) % 2;
 

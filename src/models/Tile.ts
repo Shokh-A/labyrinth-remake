@@ -1,4 +1,4 @@
-import { Collectible, Point } from "./index";
+import { Collectible, Player, Point } from "./index";
 
 type TileType = "FIXED" | "MOVABLE" | "EMPTY" | "ENABLED" | "DISABLED";
 
@@ -12,21 +12,21 @@ class Tile {
     public paths: string[] = [],
     public tileType: TileType,
     public collectible: Collectible | null = null,
-    public isConnected: boolean = false
+    public player: Player | null = null,
+    public isConnected: boolean = false,
+    public offsetY: number = 0
   ) {}
 
   draw(ctx: CanvasRenderingContext2D, pos: Point) {
     if (this.tileType === "EMPTY") return;
 
-    if (this.isConnected) {
-      this.depth = 20;
-      pos.y -= 10;
-    } else {
-      this.depth = 10;
-    }
+    pos.y += this.offsetY;
+
     const colors = this.getTileColors();
     const isFilled =
-      this.tileType === "ENABLED" || this.tileType === "DISABLED";
+      this.tileType === "ENABLED" ||
+      this.tileType === "DISABLED" ||
+      this.tileType === "FIXED";
 
     this.drawFace(ctx, pos, colors.top, this.drawTopFace.bind(this), isFilled);
     this.drawFace(ctx, pos, colors.left, this.drawLeftFace.bind(this));
@@ -34,21 +34,32 @@ class Tile {
   }
 
   private getTileColors() {
-    const isDisabled = this.tileType === "DISABLED";
-    const isEnabled = this.tileType === "ENABLED";
-
-    if (isDisabled) {
-      return {
-        top: "rgba(255, 99, 132, 0.3)",
-        left: "rgba(220, 20, 60, 0.3)",
-        right: "rgba(139, 0, 0, 0.3)",
-      };
+    switch (this.tileType) {
+      case "FIXED":
+        return {
+          top: "rgba(204, 128, 0, 0.3)",
+          left: "rgba(144, 238, 144, 0.3)",
+          right: "rgba(144, 238, 144, 0.3)",
+        };
+      case "ENABLED":
+        return {
+          top: "rgba(144, 238, 144, 0.3)",
+          left: "rgba(144, 238, 144, 0.3)",
+          right: "rgba(144, 238, 144, 0.3)",
+        };
+      case "DISABLED":
+        return {
+          top: "rgba(255, 99, 132, 0.3)",
+          left: "rgba(220, 20, 60, 0.3)",
+          right: "rgba(139, 0, 0, 0.3)",
+        };
+      default:
+        return {
+          top: "rgba(255, 99, 132, 0.3)",
+          left: "#4d7224",
+          right: "#2f4b13",
+        };
     }
-    return {
-      top: isEnabled ? "rgba(144, 238, 144, 0.3)" : "rgba(255, 99, 132, 0.3)",
-      left: isEnabled ? "rgba(144, 238, 144, 0.3)" : "#4d7224",
-      right: isEnabled ? "rgba(144, 238, 144, 0.3)" : "#2f4b13",
-    };
   }
 
   private drawFace(
@@ -106,6 +117,21 @@ class Tile {
     if (this.collectible) {
       this.collectible.gridPos = pos;
     }
+    if (this.player) {
+      console.log("Setting player pos to", pos);
+      this.player.pos = pos;
+    }
+  }
+
+  public setIsConnected(isConnected: boolean) {
+    this.offsetY = isConnected ? -10 : 0;
+    if (this.collectible) {
+      this.collectible.offsetY = isConnected ? -10 : 0;
+    }
+    if (this.player) {
+      this.player.offsetY = isConnected ? -10 : 0;
+    }
+    this.isConnected = isConnected;
   }
 }
 

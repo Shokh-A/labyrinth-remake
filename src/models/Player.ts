@@ -1,13 +1,9 @@
 import { Point } from "./index";
 
 class Player {
-  pos: Point;
-  img: HTMLImageElement;
+  public offsetY: number = 0;
 
-  constructor(pos: Point, img: HTMLImageElement) {
-    this.pos = pos;
-    this.img = img;
-  }
+  constructor(public pos: Point, public img: HTMLImageElement) {}
 
   draw(ctx: CanvasRenderingContext2D, windowSize: number) {
     const sx = 105;
@@ -15,7 +11,17 @@ class Player {
     const pos = this.isoToScreen(this.pos);
     pos.x = pos.x - 70 / 4;
     pos.y = pos.y - 70 / 2;
-    ctx.drawImage(this.img, sx, sy, 350, 350, pos.x, pos.y, 70, 70);
+    ctx.drawImage(
+      this.img,
+      sx,
+      sy,
+      350,
+      350,
+      pos.x,
+      pos.y + this.offsetY,
+      70,
+      70
+    );
   }
 
   isoToScreen(pos: Point): Point {

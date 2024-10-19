@@ -7,17 +7,20 @@ class Collectible {
     public width: number,
     public height: number,
     public img: HTMLImageElement,
-    public collected: boolean = false
+    public collected: boolean = false,
+    private srcWidth: number = 512,
+    private srcHeight: number = 512,
+    public offsetY: number = 0
   ) {
     if (srcPos.x > 14) {
-      this.srcPos.x = Math.round(srcPos.x / 14) * 512;
-      this.srcPos.y = (srcPos.y % 14) * 512;
+      this.srcPos.x = Math.round(srcPos.x / 14) * this.srcWidth;
+      this.srcPos.y = (srcPos.y % 14) * this.srcHeight;
     } else if (srcPos.y > 7) {
-      this.srcPos.x = Math.round(srcPos.y / 7) * 512;
-      this.srcPos.y = (srcPos.y % 7) * 512;
+      this.srcPos.x = Math.round(srcPos.y / 7) * this.srcWidth;
+      this.srcPos.y = (srcPos.y % 7) * this.srcHeight;
     } else {
-      srcPos.x = srcPos.x * 512;
-      srcPos.y = srcPos.y * 512;
+      srcPos.x = srcPos.x * this.srcWidth;
+      srcPos.y = srcPos.y * this.srcHeight;
       this.srcPos = srcPos;
     }
   }
@@ -31,10 +34,10 @@ class Collectible {
       this.img,
       this.srcPos.x,
       this.srcPos.y,
-      512,
-      512,
+      this.srcWidth,
+      this.srcHeight,
       pos.x,
-      pos.y,
+      pos.y + this.offsetY,
       this.width,
       this.height
     );

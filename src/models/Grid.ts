@@ -18,7 +18,7 @@ class Grid {
   collectibles: Collectible[] = [];
   hoveredTile: Tile | null = null;
   extraTile: Tile;
-  disabledTile: Tile | null = null;
+  disabledTiles: Tile[] = [];
   images: Map<string, HTMLImageElement> = new Map();
 
   constructor(
@@ -291,24 +291,25 @@ class Grid {
   }
 
   shiftAndDisable(tile: Tile) {
+    this.enableDisabledTiles();
     const { x: row, y: col } = tile.pos;
-    if (this.disabledTile) this.disabledTile.tileType = "ENABLED";
+    let disabledTile: Tile | null = null;
     if (col === 0) {
       this.shiftRow(tile, "SOUTH");
-      this.tiles[row][this.cols - 1].tileType = "DISABLED";
-      this.disabledTile = this.tiles[row][this.cols - 1];
+      disabledTile = this.tiles[row][this.cols - 1];
     } else if (col === this.cols - 1) {
       this.shiftRow(tile, "NORTH");
-      this.tiles[row][0].tileType = "DISABLED";
-      this.disabledTile = this.tiles[row][0];
+      disabledTile = this.tiles[row][0];
     } else if (row === 0) {
       this.shiftCol(tile, "EAST");
-      this.tiles[this.rows - 1][col].tileType = "DISABLED";
-      this.disabledTile = this.tiles[this.rows - 1][col];
+      disabledTile = this.tiles[this.rows - 1][col];
     } else if (row === this.rows - 1) {
       this.shiftCol(tile, "WEST");
-      this.tiles[0][col].tileType = "DISABLED";
-      this.disabledTile = this.tiles[0][col];
+      disabledTile = this.tiles[0][col];
+    }
+    if (disabledTile) {
+      disabledTile.tileType = "DISABLED";
+      this.disabledTiles.push(disabledTile);
     }
   }
 
@@ -475,6 +476,33 @@ class Grid {
     const y =
       (screenY / (this.tileHeight / 2) - centeredX / (this.tileWidth / 2)) / 2;
     return { x: Math.floor(x), y: Math.floor(y) };
+  }
+
+  disableTileNextToPlayer(player: Player) {
+    const playerPos = player.pos;
+    if (playerPos.x % 2 !== 0 && playerPos.y % 2 !== 0) {
+      return;
+    }
+    let tile: Tile | null = null;
+    if (this.isEdge(playerPos.x - 1, playerPos.y)) {
+      tile = this.tiles[this.rows - 1][playerPos.y];
+    } else if (this.isEdge(playerPos.x + 1, playerPos.y)) {
+      tile = this.tiles[0][playerPos.y];
+    } else if (this.isEdge(playerPos.x, playerPos.y - 1)) {
+      tile = this.tiles[playerPos.x][this.cols - 1];
+    } else if (this.isEdge(playerPos.x, playerPos.y + 1)) {
+      tile = this.tiles[playerPos.x][0];
+    }
+    if (tile) {
+      tile.tileType = "DISABLED";
+      this.disabledTiles.push(tile);
+    }
+  }
+
+  enableDisabledTiles() {
+    this.disabledTiles.forEach((tile) => {
+      tile.tileType = "ENABLED";
+    });
   }
 }
 

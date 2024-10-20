@@ -146,7 +146,15 @@ class GameEngine {
       this.state = "SHIFTING";
       this.curPlayerIndex = (this.curPlayerIndex + 1) % 2;
 
+      this.disableTilesNextToPlayers();
+
       this.draw(ctx);
+    }
+  }
+
+  disableTilesNextToPlayers() {
+    for (const player of this.players) {
+      this.grid.disableTileNextToPlayer(player);
     }
   }
 }

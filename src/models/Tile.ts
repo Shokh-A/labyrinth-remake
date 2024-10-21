@@ -3,7 +3,7 @@ import GameObject from "./GameObject";
 import Player from "./Player";
 import Point from "./Point";
 
-type TileType = "FIXED" | "MOVABLE" | "EMPTY" | "ENABLED" | "DISABLED";
+type TileType = "FIXED" | "MOVABLE" | "ENABLED" | "DISABLED";
 
 class Tile extends GameObject {
   constructor(
@@ -22,8 +22,6 @@ class Tile extends GameObject {
   }
 
   draw(ctx: CanvasRenderingContext2D, pos: Point) {
-    if (this.tileType === "EMPTY") return;
-
     pos.y += this.offsetY;
 
     const colors = this.getTileColors();

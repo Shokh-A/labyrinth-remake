@@ -1,5 +1,4 @@
-import { preloadImage, preloadImages } from "../services/imageLoader";
-import { Collectible, Player, Point, Tile } from "./index";
+import crystals from "../assets/images/crystals/Crystals.png";
 import northEastWest from "../assets/images/paths/Detour_NEW.png";
 import northSouthEast from "../assets/images/paths/Detour_NSE.png";
 import northSouthWest from "../assets/images/paths/Detour_NSW.png";
@@ -10,30 +9,30 @@ import northEast from "../assets/images/paths/Turn_NE.png";
 import northWest from "../assets/images/paths/Turn_NW.png";
 import southEast from "../assets/images/paths/Turn_SE.png";
 import southWest from "../assets/images/paths/Turn_SW.png";
-import crystals from "../assets/images/crystals/Crystals.png";
+import { preloadImage, preloadImages } from "../services/imageLoader";
+import { Collectible, Player, Point, Tile } from "./index";
 
 class Grid {
+  tileHeight: number;
   tiles: Tile[][];
-  crystalsImg: HTMLImageElement = new Image();
-  collectibles: Collectible[] = [];
   hoveredTile: Tile | null = null;
   extraTile: Tile;
   disabledTiles: Tile[] = [];
   images: Map<string, HTMLImageElement> = new Map();
+  crystalsImg: HTMLImageElement = new Image();
+  collectibles: Collectible[] = [];
 
   constructor(
     public worldWidth: number,
-    public rows: number,
-    public cols: number,
+    public gridSize: number,
     public tileWidth: number,
-    public tileHeight: number,
     public tileDepth: number
   ) {
-    this.rows += 2; // Add two rows as action tiles
-    this.cols += 2; // Add two cols as action tiles
-    this.tiles = new Array(this.rows)
+    this.gridSize += 2; // Add two rows and cols as action tiles
+    this.tileHeight = this.tileWidth / 2;
+    this.tiles = new Array(this.gridSize)
       .fill(null)
-      .map(() => new Array(this.cols).fill(null));
+      .map(() => new Array(this.gridSize).fill(null));
     this.extraTile = new Tile(
       new Point(4, -2),
       this.tileWidth,
@@ -70,11 +69,12 @@ class Grid {
   }
 
   private initializeTiles() {
-    for (let row = 0; row < this.rows; row++) {
-      for (let col = 0; col < this.cols; col++) {
-        const [imgSrc, paths] = this.isEdge(row, col)
-          ? ["", []]
-          : this.imageSelector(row - 1, col - 1);
+    for (let row = 0; row < this.gridSize; row++) {
+      for (let col = 0; col < this.gridSize; col++) {
+        const tileType = this.getTileType(row, col);
+        if (tileType === "EMPTY") continue;
+
+        const [imgSrc, paths] = this.imageSelector(row - 1, col - 1);
         this.tiles[row][col] = new Tile(
           new Point(row, col),
           this.tileWidth,
@@ -82,7 +82,7 @@ class Grid {
           this.tileDepth,
           this.images.get(imgSrc) as HTMLImageElement,
           paths,
-          this.getTileType(row, col)
+          tileType
         );
       }
     }
@@ -90,15 +90,8 @@ class Grid {
 
   private initializeExtraTile() {
     const [imgSrc, paths] = this.getRandomMovablePath();
-    this.extraTile = new Tile(
-      new Point(4, -2),
-      this.tileWidth,
-      this.tileHeight,
-      this.tileDepth,
-      this.images.get(imgSrc) as HTMLImageElement,
-      paths,
-      "MOVABLE"
-    );
+    this.extraTile.pathImg = this.images.get(imgSrc) as HTMLImageElement;
+    this.extraTile.paths = paths;
   }
 
   private initializeCollectibles(numOfCollectibles: number) {
@@ -131,39 +124,39 @@ class Grid {
     switch (true) {
       case x === 0 && y === 0:
         return [southEast, ["SOUTH", "EAST"]];
-      case x === 0 && y === this.cols - 3:
+      case x === 0 && y === this.gridSize - 3:
         return [northEast, ["NORTH", "EAST"]];
-      case x === this.rows - 3 && y === 0:
+      case x === this.gridSize - 3 && y === 0:
         return [southWest, ["SOUTH", "WEST"]];
-      case x === this.rows - 3 && y === this.cols - 3:
+      case x === this.gridSize - 3 && y === this.gridSize - 3:
         return [northWest, ["NORTH", "WEST"]];
       case x === 0 && y % 2 === 0:
         return [northSouthEast, ["NORTH", "SOUTH", "EAST"]];
-      case x === this.rows - 3 && y % 2 === 0:
+      case x === this.gridSize - 3 && y % 2 === 0:
         return [northSouthWest, ["NORTH", "SOUTH", "WEST"]];
       case y === 0 && x % 2 === 0:
         return [southEastWest, ["SOUTH", "EAST", "WEST"]];
-      case y === this.cols - 3 && x % 2 === 0:
+      case y === this.gridSize - 3 && x % 2 === 0:
         return [northEastWest, ["NORTH", "EAST", "WEST"]];
       case x % 2 === 0 &&
         y % 2 === 0 &&
-        x < (this.rows - 3) / 2 &&
-        y < (this.cols - 3) / 2:
+        x < (this.gridSize - 3) / 2 &&
+        y < (this.gridSize - 3) / 2:
         return [northSouthEast, ["NORTH", "SOUTH", "EAST"]];
       case x % 2 === 0 &&
         y % 2 === 0 &&
-        x > (this.rows - 3) / 2 &&
-        y > (this.cols - 3) / 2:
+        x > (this.gridSize - 3) / 2 &&
+        y > (this.gridSize - 3) / 2:
         return [northSouthWest, ["NORTH", "SOUTH", "WEST"]];
       case x % 2 === 0 &&
         y % 2 === 0 &&
-        x < (this.rows - 3) / 2 &&
-        y > (this.cols - 3) / 2:
+        x < (this.gridSize - 3) / 2 &&
+        y > (this.gridSize - 3) / 2:
         return [northEastWest, ["NORTH", "EAST", "WEST"]];
       case x % 2 === 0 &&
         y % 2 === 0 &&
-        x > (this.rows - 3) / 2 &&
-        y < (this.cols - 3) / 2:
+        x > (this.gridSize - 3) / 2 &&
+        y < (this.gridSize - 3) / 2:
         return [southEastWest, ["SOUTH", "EAST", "WEST"]];
       default:
         return this.getRandomMovablePath();
@@ -223,18 +216,15 @@ class Grid {
   }
 
   private getRandomTile() {
-    const randomRow = Math.floor(Math.random() * (this.rows - 4)) + 2;
-    const randomCol = Math.floor(Math.random() * (this.cols - 4)) + 2;
+    const randomRow = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
+    const randomCol = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
     return [randomRow, randomCol];
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-    ctx.clearRect(0, 0, this.worldWidth, this.worldWidth);
-
-    this.tiles.flat().forEach((tile) => {
-      const pos = this.isoToScreen(tile.pos);
-      tile.draw(ctx, pos);
-    });
+    this.tiles
+      .flat()
+      .forEach((tile) => tile && tile.draw(ctx, this.isoToScreen(tile.pos)));
     this.extraTile?.draw(ctx, this.isoToScreen(new Point(4, -2)));
     this.drawCrystals(ctx);
   }
@@ -296,14 +286,14 @@ class Grid {
     let disabledTile: Tile | null = null;
     if (col === 0) {
       this.shiftRow(tile, "SOUTH");
-      disabledTile = this.tiles[row][this.cols - 1];
-    } else if (col === this.cols - 1) {
+      disabledTile = this.tiles[row][this.gridSize - 1];
+    } else if (col === this.gridSize - 1) {
       this.shiftRow(tile, "NORTH");
       disabledTile = this.tiles[row][0];
     } else if (row === 0) {
       this.shiftCol(tile, "EAST");
-      disabledTile = this.tiles[this.rows - 1][col];
-    } else if (row === this.rows - 1) {
+      disabledTile = this.tiles[this.gridSize - 1][col];
+    } else if (row === this.gridSize - 1) {
       this.shiftCol(tile, "WEST");
       disabledTile = this.tiles[0][col];
     }
@@ -319,10 +309,10 @@ class Grid {
 
     if (direction === "SOUTH") {
       tile.setPos(new Point(row, 1));
-      const lastTile = tiles[row][this.cols - 2];
+      const lastTile = tiles[row][this.gridSize - 2];
 
-      for (let i = this.cols - 2; i > 0; i--) {
-        tiles[row][i].setPos(new Point(row, (i % (this.cols - 2)) + 1));
+      for (let i = this.gridSize - 2; i > 0; i--) {
+        tiles[row][i].setPos(new Point(row, (i % (this.gridSize - 2)) + 1));
         tiles[row][i] = tiles[row][i - 1];
       }
 
@@ -330,15 +320,15 @@ class Grid {
       this.hoveredTile = lastTile;
       tiles[row][col] = this.hoveredTile;
     } else if (direction === "NORTH") {
-      tile.setPos(new Point(row, this.cols - 2));
+      tile.setPos(new Point(row, this.gridSize - 2));
       const lastTile = tiles[row][1];
 
-      for (let i = 1; i < this.cols - 1; i++) {
-        tiles[row][i].setPos(new Point(row, (i - 1) % (this.cols - 2)));
+      for (let i = 1; i < this.gridSize - 1; i++) {
+        tiles[row][i].setPos(new Point(row, (i - 1) % (this.gridSize - 2)));
         tiles[row][i] = tiles[row][i + 1];
       }
 
-      lastTile.setPos(new Point(row, this.cols - 1));
+      lastTile.setPos(new Point(row, this.gridSize - 1));
       this.hoveredTile = lastTile;
       tiles[row][col] = this.hoveredTile;
     }
@@ -350,10 +340,10 @@ class Grid {
 
     if (direction === "EAST") {
       tile.setPos(new Point(1, col));
-      const lastTile = tiles[this.rows - 2][col];
+      const lastTile = tiles[this.gridSize - 2][col];
 
-      for (let i = this.rows - 2; i > 0; i--) {
-        tiles[i][col].setPos(new Point((i % (this.rows - 2)) + 1, col));
+      for (let i = this.gridSize - 2; i > 0; i--) {
+        tiles[i][col].setPos(new Point((i % (this.gridSize - 2)) + 1, col));
         tiles[i][col] = tiles[i - 1][col];
       }
 
@@ -361,15 +351,15 @@ class Grid {
       this.hoveredTile = lastTile;
       tiles[row][col] = this.hoveredTile;
     } else if (direction === "WEST") {
-      tile.setPos(new Point(this.rows - 2, col));
+      tile.setPos(new Point(this.gridSize - 2, col));
       const lastTile = tiles[1][col];
 
-      for (let i = 1; i < this.rows - 1; i++) {
-        tiles[i][col].setPos(new Point((i - 1) % (this.rows - 2), col));
+      for (let i = 1; i < this.gridSize - 1; i++) {
+        tiles[i][col].setPos(new Point((i - 1) % (this.gridSize - 2), col));
         tiles[i][col] = tiles[i + 1][col];
       }
 
-      lastTile.setPos(new Point(this.rows - 1, col));
+      lastTile.setPos(new Point(this.gridSize - 1, col));
       this.hoveredTile = lastTile;
       tiles[row][col] = this.hoveredTile;
     }
@@ -396,7 +386,7 @@ class Grid {
 
     if (
       paths.includes("SOUTH") &&
-      y < this.cols - 2 &&
+      y < this.gridSize - 2 &&
       this.tiles[x][y + 1].paths.includes("NORTH")
     ) {
       this.riseConnectedTiles(this.tiles[x][y + 1], visited);
@@ -404,7 +394,7 @@ class Grid {
 
     if (
       paths.includes("EAST") &&
-      x < this.rows - 2 &&
+      x < this.gridSize - 2 &&
       this.tiles[x + 1][y].paths.includes("WEST")
     ) {
       this.riseConnectedTiles(this.tiles[x + 1][y], visited);
@@ -420,9 +410,7 @@ class Grid {
   }
 
   public lowerTiles() {
-    this.tiles.flat().forEach((tile) => {
-      tile.setIsConnected(false);
-    });
+    this.tiles.flat().forEach((tile) => tile && tile.setIsConnected(false));
   }
 
   public getTile(screenX: number, screenY: number): Tile | null {
@@ -436,21 +424,24 @@ class Grid {
   }
 
   private isWithinGrid(row: number, col: number): boolean {
-    return row >= 0 && row < this.rows && col >= 0 && col < this.cols;
+    return row >= 0 && row < this.gridSize && col >= 0 && col < this.gridSize;
   }
 
   public isCorner(row: number, col: number): boolean {
     return (
       (row === 0 && col === 0) ||
-      (row === 0 && col === this.cols - 1) ||
-      (row === this.rows - 1 && col === 0) ||
-      (row === this.rows - 1 && col === this.cols - 1)
+      (row === 0 && col === this.gridSize - 1) ||
+      (row === this.gridSize - 1 && col === 0) ||
+      (row === this.gridSize - 1 && col === this.gridSize - 1)
     );
   }
 
   public isEdge(row: number, col: number): boolean {
     return (
-      row === 0 || row === this.rows - 1 || col === 0 || col === this.cols - 1
+      row === 0 ||
+      row === this.gridSize - 1 ||
+      col === 0 ||
+      col === this.gridSize - 1
     );
   }
 
@@ -485,11 +476,11 @@ class Grid {
     }
     let tile: Tile | null = null;
     if (this.isEdge(playerPos.x - 1, playerPos.y)) {
-      tile = this.tiles[this.rows - 1][playerPos.y];
+      tile = this.tiles[this.gridSize - 1][playerPos.y];
     } else if (this.isEdge(playerPos.x + 1, playerPos.y)) {
       tile = this.tiles[0][playerPos.y];
     } else if (this.isEdge(playerPos.x, playerPos.y - 1)) {
-      tile = this.tiles[playerPos.x][this.cols - 1];
+      tile = this.tiles[playerPos.x][this.gridSize - 1];
     } else if (this.isEdge(playerPos.x, playerPos.y + 1)) {
       tile = this.tiles[playerPos.x][0];
     }
@@ -500,9 +491,7 @@ class Grid {
   }
 
   enableDisabledTiles() {
-    this.disabledTiles.forEach((tile) => {
-      tile.tileType = "ENABLED";
-    });
+    this.disabledTiles.forEach((tile) => (tile.tileType = "ENABLED"));
   }
 }
 

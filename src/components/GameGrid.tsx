@@ -4,7 +4,6 @@ import { GameEngine } from "../models";
 const WORLD_WIDTH = 900;
 const WORLD_HEIGHT = 600;
 const TILE_WIDTH = 100;
-const TILE_HEIGHT = 50;
 const TILE_DEPTH = 10;
 const NUM_OF_PLAYERS = 2;
 const NUM_OF_COLLECTIBLES = 4;
@@ -12,13 +11,7 @@ const NUM_OF_COLLECTIBLES = 4;
 const GameGrid: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [gameEngine] = useState(
-    new GameEngine(
-      WORLD_WIDTH,
-      WORLD_HEIGHT,
-      TILE_WIDTH,
-      TILE_HEIGHT,
-      TILE_DEPTH
-    )
+    new GameEngine(WORLD_WIDTH, WORLD_HEIGHT, TILE_WIDTH, TILE_DEPTH)
   );
 
   useEffect(() => {

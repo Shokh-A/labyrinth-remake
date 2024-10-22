@@ -1,4 +1,4 @@
-import { Grid, Player, Tile } from "./index";
+import { Grid, Player, Point, Tile } from "./index";
 
 class GameEngine {
   private readonly grid: Grid;
@@ -35,10 +35,12 @@ class GameEngine {
   ): void {
     if (this.gameState !== "SHIFTING") return;
 
-    const tile = this.grid.getTile(screenX, screenY);
+    const tile = this.grid.getTile(new Point(screenX, screenY));
     if (tile !== this.grid.hoveredTile && this.grid.hoveredTile) {
+      console.log("Swapping tiles back");
       this.grid.swapWithExtraTile(this.grid.hoveredTile);
     } else if (tile && tile.tileType === "ENABLED" && !this.grid.hoveredTile) {
+      console.log("Swapping tiles");
       this.grid.swapWithExtraTile(tile);
     }
     this.draw(ctx);
@@ -49,13 +51,16 @@ class GameEngine {
     screenX: number,
     screenY: number
   ): void {
-    const tile = this.grid.getTile(screenX, screenY);
+    const tile = this.grid.getTile(new Point(screenX, screenY));
     if (!tile) return;
 
     const curPlayer = this.grid.getPlayer(this.curPlayerIndex);
     if (this.gameState === "SHIFTING") {
       if (tile === this.grid.extraTile) this.grid.rotateTile(tile);
-      else this.shiftTiles(tile, curPlayer);
+      else {
+        this.shiftTiles(tile, curPlayer);
+        // this.grid.animate(ctx);
+      }
       this.draw(ctx);
     } else if (this.gameState === "MOVING" && tile.isConnected) {
       this.movePlayer(ctx, tile, curPlayer);
@@ -75,8 +80,8 @@ class GameEngine {
     tile: Tile,
     player: Player
   ): void {
-    const playerPos = player.pos;
-    this.grid.tiles[playerPos.x][playerPos.y].setPlayer(null);
+    const { x: row, y: col } = this.grid.screenToIso(player.pos);
+    this.grid.tiles[row][col].setPlayer(null);
     tile.setPlayer(player);
 
     this.grid.lowerTiles();

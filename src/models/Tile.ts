@@ -16,12 +16,15 @@ class Tile extends GameObject {
     public tileType: TileType,
     public isConnected: boolean = false,
     public collectible: Collectible | null = null,
-    public player: Player | null = null
+    public player: Player | null = null,
+
+    public target: Point | null = null
   ) {
     super(pos, width, height);
   }
 
-  draw(ctx: CanvasRenderingContext2D, pos: Point) {
+  draw(ctx: CanvasRenderingContext2D) {
+    const pos = this.pos.copy();
     pos.y += this.offsetY;
 
     const colors = this.getTileColors();
@@ -117,6 +120,10 @@ class Tile extends GameObject {
     ctx.lineTo(pos.x, pos.y + this.height);
     ctx.lineTo(pos.x, pos.y + this.height + this.depth);
     ctx.lineTo(pos.x + this.width / 2, pos.y + this.height / 2 + this.depth);
+  }
+
+  public setTarget(target: Point) {
+    this.target = target;
   }
 
   public setPos(pos: Point) {

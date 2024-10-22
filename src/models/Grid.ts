@@ -25,7 +25,7 @@ class Grid {
       .fill(null)
       .map(() => new Array(this.gridSize).fill(null));
     this.extraTile = new Tile(
-      new Point(4, -2),
+      this.isoToScreen(new Point(4, -2)),
       this.tileWidth,
       this.tileHeight,
       this.tileDepth,
@@ -85,7 +85,7 @@ class Grid {
           : this.imageSelector(row - 1, col - 1);
 
         this.tiles[row][col] = new Tile(
-          new Point(row, col),
+          this.isoToScreen(new Point(row, col)),
           this.tileWidth,
           this.tileHeight,
           this.tileDepth,
@@ -116,7 +116,7 @@ class Grid {
       uniquePositions.add(`${row},${col}`);
 
       const collectible = new Collectible(
-        new Point(row, col),
+        this.isoToScreen(new Point(row, col)),
         40,
         40,
         i,
@@ -136,7 +136,7 @@ class Grid {
 
     for (let i = 0; i < numOfPlayers; i++) {
       const player = new Player(
-        spawnPoints[i],
+        this.isoToScreen(spawnPoints[i]),
         this.images.get(playerImg) as HTMLImageElement
       );
       this.tiles[spawnPoints[i].x][spawnPoints[i].y].setPlayer(player);
@@ -255,49 +255,59 @@ class Grid {
     );
   }
 
-  private screenToIso(
-    screenX: number,
-    screenY: number
-  ): { x: number; y: number } {
-    const centeredX = screenX - this.worldWidth / 2;
+  public screenToIso(screenPos: Point): { x: number; y: number } {
+    const centeredX = screenPos.x - this.worldWidth / 2;
     const x =
-      (centeredX / (this.tileWidth / 2) + screenY / (this.tileHeight / 2)) / 2;
+      (centeredX / (this.tileWidth / 2) + screenPos.y / (this.tileHeight / 2)) /
+      2;
     const y =
-      (screenY / (this.tileHeight / 2) - centeredX / (this.tileWidth / 2)) / 2;
+      (screenPos.y / (this.tileHeight / 2) - centeredX / (this.tileWidth / 2)) /
+      2;
     return { x: Math.floor(x), y: Math.floor(y) };
   }
 
   public draw(ctx: CanvasRenderingContext2D) {
-    this.tiles
-      .flat()
-      .forEach((tile) => tile && tile.draw(ctx, this.isoToScreen(tile.pos)));
-    this.extraTile?.draw(ctx, this.isoToScreen(this.extraTile.pos));
+    this.tiles.flat().forEach((tile) => tile && tile.draw(ctx));
+    this.extraTile?.draw(ctx);
   }
 
-  public getTile(screenX: number, screenY: number): Tile | null {
-    const { x, y } = this.screenToIso(screenX, screenY);
+  public animate(ctx: CanvasRenderingContext2D) {
+    console.log("Animating");
+    ctx.clearRect(0, 0, this.worldWidth, this.worldWidth);
+    this.draw(ctx);
+    if (this.tiles.flat().some((tile) => tile && tile.target !== null)) {
+      requestAnimationFrame(() => this.animate(ctx));
+    }
+  }
+
+  public getTile(screenPos: Point): Tile | null {
+    const { x, y } = this.screenToIso(screenPos);
     if (this.isWithinGrid(x, y)) {
       return this.tiles[x][y];
-    } else if (this.extraTile.pos.x === x && this.extraTile.pos.y === y) {
-      return this.extraTile;
+    } else {
+      const { x: extraRow, y: extraCol } = this.screenToIso(this.extraTile.pos);
+      if (extraRow === x && extraCol === y) {
+        return this.extraTile;
+      }
     }
     return null;
   }
 
   public swapWithExtraTile(tile: Tile) {
+    const { x: row, y: col } = this.screenToIso(tile.pos);
     const tilePos = tile.pos;
     const extraTilePos = this.extraTile.pos;
 
     this.extraTile.setPos(tilePos);
     tile.setPos(extraTilePos);
 
-    this.tiles[tilePos.x][tilePos.y] = this.extraTile;
+    this.tiles[row][col] = this.extraTile;
     this.extraTile = tile;
 
     if (tile === this.hoveredTile) {
       this.hoveredTile = null;
     } else {
-      this.hoveredTile = this.tiles[tilePos.x][tilePos.y];
+      this.hoveredTile = this.tiles[row][col];
     }
   }
 
@@ -351,7 +361,7 @@ class Grid {
 
   public shiftAndDisable(tile: Tile) {
     this.enableDisabledTiles();
-    const { x: row, y: col } = tile.pos;
+    const { x: row, y: col } = this.screenToIso(tile.pos);
     let disabledTile: Tile | null = null;
     if (col === 0) {
       this.shiftRow(tile, "SOUTH");
@@ -375,30 +385,32 @@ class Grid {
 
   private shiftRow(tile: Tile, direction: "NORTH" | "SOUTH") {
     const tiles = this.tiles;
-    const { x: row, y: col } = tile.pos;
+    const { x: row, y: col } = this.screenToIso(tile.pos);
 
     if (direction === "SOUTH") {
-      tile.setPos(new Point(row, 1));
+      tile.setPos(this.isoToScreen(new Point(row, 1)));
       const lastTile = tiles[row][this.gridSize - 2];
 
       for (let i = this.gridSize - 2; i > 0; i--) {
-        tiles[row][i].setPos(new Point(row, (i % (this.gridSize - 2)) + 1));
+        const newPos = new Point(row, (i % (this.gridSize - 2)) + 1);
+        tiles[row][i].setPos(this.isoToScreen(newPos));
         tiles[row][i] = tiles[row][i - 1];
       }
 
-      lastTile.setPos(new Point(row, 0));
+      lastTile.setPos(this.isoToScreen(new Point(row, 0)));
       this.hoveredTile = lastTile;
       tiles[row][col] = this.hoveredTile;
     } else if (direction === "NORTH") {
-      tile.setPos(new Point(row, this.gridSize - 2));
+      tile.setPos(this.isoToScreen(new Point(row, this.gridSize - 2)));
       const lastTile = tiles[row][1];
 
       for (let i = 1; i < this.gridSize - 1; i++) {
-        tiles[row][i].setPos(new Point(row, (i - 1) % (this.gridSize - 2)));
+        const newPos = new Point(row, (i - 1) % (this.gridSize - 2));
+        tiles[row][i].setPos(this.isoToScreen(newPos));
         tiles[row][i] = tiles[row][i + 1];
       }
 
-      lastTile.setPos(new Point(row, this.gridSize - 1));
+      lastTile.setPos(this.isoToScreen(new Point(row, this.gridSize - 1)));
       this.hoveredTile = lastTile;
       tiles[row][col] = this.hoveredTile;
     }
@@ -406,45 +418,47 @@ class Grid {
 
   private shiftCol(tile: Tile, direction: "EAST" | "WEST") {
     const tiles = this.tiles;
-    const { x: row, y: col } = tile.pos;
+    const { x: row, y: col } = this.screenToIso(tile.pos);
 
     if (direction === "EAST") {
-      tile.setPos(new Point(1, col));
+      tile.setPos(this.isoToScreen(new Point(1, col)));
       const lastTile = tiles[this.gridSize - 2][col];
 
       for (let i = this.gridSize - 2; i > 0; i--) {
-        tiles[i][col].setPos(new Point((i % (this.gridSize - 2)) + 1, col));
+        const newPos = new Point((i % (this.gridSize - 2)) + 1, col);
+        tiles[i][col].setPos(this.isoToScreen(newPos));
         tiles[i][col] = tiles[i - 1][col];
       }
 
-      lastTile.setPos(new Point(0, col));
+      lastTile.setPos(this.isoToScreen(new Point(0, col)));
       this.hoveredTile = lastTile;
       tiles[row][col] = this.hoveredTile;
     } else if (direction === "WEST") {
-      tile.setPos(new Point(this.gridSize - 2, col));
+      tile.setPos(this.isoToScreen(new Point(this.gridSize - 2, col)));
       const lastTile = tiles[1][col];
 
       for (let i = 1; i < this.gridSize - 1; i++) {
-        tiles[i][col].setPos(new Point((i - 1) % (this.gridSize - 2), col));
+        const newPos = new Point((i - 1) % (this.gridSize - 2), col);
+        tiles[i][col].setPos(this.isoToScreen(newPos));
         tiles[i][col] = tiles[i + 1][col];
       }
 
-      lastTile.setPos(new Point(this.gridSize - 1, col));
+      lastTile.setPos(this.isoToScreen(new Point(this.gridSize - 1, col)));
       this.hoveredTile = lastTile;
       tiles[row][col] = this.hoveredTile;
     }
   }
 
   public riseConnectedTiles(player: Player) {
-    const pos = player.pos;
-    this.riseTiles(this.tiles[pos.x][pos.y]);
+    const { x: row, y: col } = this.screenToIso(player.pos);
+    this.riseTiles(this.tiles[row][col]);
   }
 
   private riseTiles(tile: Tile, visited: Set<string> = new Set()) {
     const { pos, paths } = tile;
-    const { x, y } = pos;
+    const { x: row, y: col } = this.screenToIso(pos);
 
-    const key = `${x},${y}`;
+    const key = `${row},${col}`;
     if (visited.has(key)) return;
     visited.add(key);
 
@@ -452,34 +466,34 @@ class Grid {
 
     if (
       paths.includes("NORTH") &&
-      y > 1 &&
-      this.tiles[x][y - 1].paths.includes("SOUTH")
+      col > 1 &&
+      this.tiles[row][col - 1].paths.includes("SOUTH")
     ) {
-      this.riseTiles(this.tiles[x][y - 1], visited);
+      this.riseTiles(this.tiles[row][col - 1], visited);
     }
 
     if (
       paths.includes("SOUTH") &&
-      y < this.gridSize - 2 &&
-      this.tiles[x][y + 1].paths.includes("NORTH")
+      col < this.gridSize - 2 &&
+      this.tiles[row][col + 1].paths.includes("NORTH")
     ) {
-      this.riseTiles(this.tiles[x][y + 1], visited);
+      this.riseTiles(this.tiles[row][col + 1], visited);
     }
 
     if (
       paths.includes("EAST") &&
-      x < this.gridSize - 2 &&
-      this.tiles[x + 1][y].paths.includes("WEST")
+      row < this.gridSize - 2 &&
+      this.tiles[row + 1][col].paths.includes("WEST")
     ) {
-      this.riseTiles(this.tiles[x + 1][y], visited);
+      this.riseTiles(this.tiles[row + 1][col], visited);
     }
 
     if (
       paths.includes("WEST") &&
-      x > 1 &&
-      this.tiles[x - 1][y].paths.includes("EAST")
+      row > 1 &&
+      this.tiles[row - 1][col].paths.includes("EAST")
     ) {
-      this.riseTiles(this.tiles[x - 1][y], visited);
+      this.riseTiles(this.tiles[row - 1][col], visited);
     }
   }
 

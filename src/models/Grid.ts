@@ -1,26 +1,17 @@
-import crystals from "../assets/images/crystals/Crystals.png";
-import northEastWest from "../assets/images/paths/Detour_NEW.png";
-import northSouthEast from "../assets/images/paths/Detour_NSE.png";
-import northSouthWest from "../assets/images/paths/Detour_NSW.png";
-import southEastWest from "../assets/images/paths/Detour_SEW.png";
-import eastWest from "../assets/images/paths/Straight_EW.png";
-import northSouth from "../assets/images/paths/Straight_NS.png";
-import northEast from "../assets/images/paths/Turn_NE.png";
-import northWest from "../assets/images/paths/Turn_NW.png";
-import southEast from "../assets/images/paths/Turn_SE.png";
-import southWest from "../assets/images/paths/Turn_SW.png";
-import { preloadImage, preloadImages } from "../services/imageLoader";
+import crystalsImg from "../assets/images/crystals/Crystals.png";
+import playerImg from "../assets/images/sprites/CharacterSheet_CharacterFront.png";
+import { Path, pathsMap, preloadImages } from "../services/imageLoader";
 import { Collectible, Player, Point, Tile } from "./index";
 
 class Grid {
   tileHeight: number;
-  tiles: Tile[][];
+  private movablePaths: Path[] = [];
+  images: Map<string, HTMLImageElement> = new Map();
   hoveredTile: Tile | null = null;
   extraTile: Tile;
   disabledTiles: Tile[] = [];
-  images: Map<string, HTMLImageElement> = new Map();
-  crystalsImg: HTMLImageElement = new Image();
-  collectibles: Collectible[] = [];
+  tiles: Tile[][];
+  players: Player[] = [];
 
   constructor(
     public worldWidth: number,
@@ -42,30 +33,45 @@ class Grid {
       [],
       "MOVABLE"
     );
+
+    const movablePathsTurn = [
+      ...this.createPaths(4, pathsMap.southEast),
+      ...this.createPaths(4, pathsMap.southWest),
+      ...this.createPaths(4, pathsMap.northWest),
+      ...this.createPaths(3, pathsMap.northEast),
+    ];
+
+    const movablePathsStraight = [
+      ...this.createPaths(6, pathsMap.eastWest),
+      ...this.createPaths(7, pathsMap.northSouth),
+    ];
+
+    const movablePathsDetour = [
+      ...this.createPaths(1, pathsMap.southEastWest),
+      ...this.createPaths(2, pathsMap.northEastWest),
+      ...this.createPaths(1, pathsMap.northSouthWest),
+      ...this.createPaths(2, pathsMap.northSouthEast),
+    ];
+
+    // This array contains paths to fill out the 7x7 grid with movable tiles
+    this.movablePaths = [
+      ...movablePathsTurn,
+      ...movablePathsStraight,
+      ...movablePathsDetour,
+    ];
   }
 
-  async init(players: Player[], numOfCollectibles: number) {
-    this.images = await preloadImages([
-      eastWest,
-      northSouth,
-      northEast,
-      northWest,
-      southEast,
-      southWest,
-      northSouthEast,
-      southEastWest,
-      northSouthWest,
-      northEastWest,
-    ]);
-    this.crystalsImg = await preloadImage(crystals);
-    this.initializeTiles();
-    this.initializeExtraTile();
-    this.initializeCollectibles(numOfCollectibles);
+  async init(numOfPlayers: number, numOfCollectibles: number) {
+    const imgSources = [
+      ...Object.values(pathsMap).map((path) => path.imgSrc),
+      crystalsImg,
+      playerImg,
+    ];
+    this.images = await preloadImages(imgSources);
 
-    for (const player of players) {
-      const playerPos = player.pos;
-      this.tiles[playerPos.x][playerPos.y].player = player;
-    }
+    this.initializeTiles();
+    this.initializeCollectibles(numOfCollectibles);
+    this.initializePlayers(numOfPlayers);
   }
 
   private initializeTiles() {
@@ -74,7 +80,10 @@ class Grid {
         const tileType = this.getTileType(row, col);
         if (tileType === "EMPTY") continue;
 
-        const [imgSrc, paths] = this.imageSelector(row - 1, col - 1);
+        const { imgSrc, paths }: Path = this.isEdge(row, col)
+          ? { imgSrc: "", paths: [] }
+          : this.imageSelector(row - 1, col - 1);
+
         this.tiles[row][col] = new Tile(
           new Point(row, col),
           this.tileWidth,
@@ -86,119 +95,57 @@ class Grid {
         );
       }
     }
+    this.initializeExtraTile();
   }
 
   private initializeExtraTile() {
-    const [imgSrc, paths] = this.getRandomMovablePath();
+    const { imgSrc, paths } = this.getRandomMovablePath();
     this.extraTile.pathImg = this.images.get(imgSrc) as HTMLImageElement;
     this.extraTile.paths = paths;
   }
 
   private initializeCollectibles(numOfCollectibles: number) {
-    if (numOfCollectibles > 24) throw new Error("Max collectibles is 24");
+    if (numOfCollectibles > 24) throw new Error("Collectibles number exceeded");
 
-    const randomPositions: string[] = [];
+    const uniquePositions: Set<string> = new Set();
     for (let i = 0; i < numOfCollectibles; i++) {
-      let [row, col] = this.getRandomTile();
-      while (
-        randomPositions.includes(`${row},${col}`) ||
-        this.isCorner(row, col)
-      ) {
-        [row, col] = this.getRandomTile();
+      let [row, col] = this.getRandomTilePos();
+      while (uniquePositions.has(`${row},${col}`)) {
+        [row, col] = this.getRandomTilePos();
       }
-      randomPositions.push(`${row},${col}`);
+      uniquePositions.add(`${row},${col}`);
 
       const collectible = new Collectible(
-        new Point(0, i),
         new Point(row, col),
         40,
         40,
-        this.crystalsImg
+        i,
+        this.images.get(crystalsImg) as HTMLImageElement
       );
-      this.tiles[row][col].collectible = collectible;
-      this.collectibles.push(collectible);
+      this.tiles[row][col].setCollectible(collectible);
     }
   }
 
-  private imageSelector(x: number, y: number): [string, string[]] {
-    switch (true) {
-      case x === 0 && y === 0:
-        return [southEast, ["SOUTH", "EAST"]];
-      case x === 0 && y === this.gridSize - 3:
-        return [northEast, ["NORTH", "EAST"]];
-      case x === this.gridSize - 3 && y === 0:
-        return [southWest, ["SOUTH", "WEST"]];
-      case x === this.gridSize - 3 && y === this.gridSize - 3:
-        return [northWest, ["NORTH", "WEST"]];
-      case x === 0 && y % 2 === 0:
-        return [northSouthEast, ["NORTH", "SOUTH", "EAST"]];
-      case x === this.gridSize - 3 && y % 2 === 0:
-        return [northSouthWest, ["NORTH", "SOUTH", "WEST"]];
-      case y === 0 && x % 2 === 0:
-        return [southEastWest, ["SOUTH", "EAST", "WEST"]];
-      case y === this.gridSize - 3 && x % 2 === 0:
-        return [northEastWest, ["NORTH", "EAST", "WEST"]];
-      case x % 2 === 0 &&
-        y % 2 === 0 &&
-        x < (this.gridSize - 3) / 2 &&
-        y < (this.gridSize - 3) / 2:
-        return [northSouthEast, ["NORTH", "SOUTH", "EAST"]];
-      case x % 2 === 0 &&
-        y % 2 === 0 &&
-        x > (this.gridSize - 3) / 2 &&
-        y > (this.gridSize - 3) / 2:
-        return [northSouthWest, ["NORTH", "SOUTH", "WEST"]];
-      case x % 2 === 0 &&
-        y % 2 === 0 &&
-        x < (this.gridSize - 3) / 2 &&
-        y > (this.gridSize - 3) / 2:
-        return [northEastWest, ["NORTH", "EAST", "WEST"]];
-      case x % 2 === 0 &&
-        y % 2 === 0 &&
-        x > (this.gridSize - 3) / 2 &&
-        y < (this.gridSize - 3) / 2:
-        return [southEastWest, ["SOUTH", "EAST", "WEST"]];
-      default:
-        return this.getRandomMovablePath();
+  private initializePlayers(numOfPlayers: number) {
+    const spawnPoints = [
+      new Point(1, 1),
+      new Point(7, 7),
+      new Point(1, 7),
+      new Point(7, 1),
+    ];
+
+    for (let i = 0; i < numOfPlayers; i++) {
+      const player = new Player(
+        spawnPoints[i],
+        this.images.get(playerImg) as HTMLImageElement
+      );
+      this.tiles[spawnPoints[i].x][spawnPoints[i].y].setPlayer(player);
+      this.players.push(player);
     }
   }
 
-  private getRandomMovablePath(): [string, string[]] {
-    // If paths are connected increase the depth of the tile
-    // This hard coded array is used to determine the paths of the tiles
-    // Works only with 7x7 grid
-    const movablePathsTurn = [
-      ...this.createPaths(4, southEast, ["SOUTH", "EAST"]),
-      ...this.createPaths(4, southWest, ["SOUTH", "WEST"]),
-      ...this.createPaths(4, northWest, ["NORTH", "WEST"]),
-      ...this.createPaths(3, northEast, ["NORTH", "EAST"]),
-    ];
-
-    const movablePathsStraight = [
-      ...this.createPaths(6, eastWest, ["EAST", "WEST"]),
-      ...this.createPaths(7, northSouth, ["NORTH", "SOUTH"]),
-    ];
-
-    const movablePathsDetour = [
-      ...this.createPaths(1, southEastWest, ["SOUTH", "EAST", "WEST"]),
-      ...this.createPaths(2, northEastWest, ["NORTH", "EAST", "WEST"]),
-      ...this.createPaths(1, northSouthWest, ["NORTH", "SOUTH", "WEST"]),
-      ...this.createPaths(2, northSouthEast, ["NORTH", "SOUTH", "EAST"]),
-    ];
-
-    const movablePaths = [
-      ...movablePathsTurn,
-      ...movablePathsStraight,
-      ...movablePathsDetour,
-    ];
-    const randomIndex = Math.random() * movablePaths.length;
-    const [removedPath] = movablePaths.splice(randomIndex, 1);
-
-    return removedPath;
-  }
-
-  private createPaths(count: number, pathSrc: string, directions: string[]) {
-    return new Array(count).fill([pathSrc, directions]);
+  private createPaths(count: number, path: Path) {
+    return new Array(count).fill(path);
   }
 
   private getTileType(row: number, col: number) {
@@ -215,30 +162,129 @@ class Grid {
     return "MOVABLE";
   }
 
-  private getRandomTile() {
+  private imageSelector(x: number, y: number): Path {
+    switch (true) {
+      case x === 0 && y === 0:
+        return pathsMap.southEast;
+      case x === 0 && y === this.gridSize - 3:
+        return pathsMap.northEast;
+      case x === this.gridSize - 3 && y === 0:
+        return pathsMap.southWest;
+      case x === this.gridSize - 3 && y === this.gridSize - 3:
+        return pathsMap.northWest;
+      case x === 0 && y % 2 === 0:
+        return pathsMap.northSouthEast;
+      case x === this.gridSize - 3 && y % 2 === 0:
+        return pathsMap.northSouthWest;
+      case y === 0 && x % 2 === 0:
+        return pathsMap.southEastWest;
+      case y === this.gridSize - 3 && x % 2 === 0:
+        return pathsMap.northEastWest;
+      case x % 2 === 0 &&
+        y % 2 === 0 &&
+        x < (this.gridSize - 3) / 2 &&
+        y < (this.gridSize - 3) / 2:
+        return pathsMap.northSouthEast;
+      case x % 2 === 0 &&
+        y % 2 === 0 &&
+        x > (this.gridSize - 3) / 2 &&
+        y > (this.gridSize - 3) / 2:
+        return pathsMap.northSouthWest;
+      case x % 2 === 0 &&
+        y % 2 === 0 &&
+        x < (this.gridSize - 3) / 2 &&
+        y > (this.gridSize - 3) / 2:
+        return pathsMap.northEastWest;
+      case x % 2 === 0 &&
+        y % 2 === 0 &&
+        x > (this.gridSize - 3) / 2 &&
+        y < (this.gridSize - 3) / 2:
+        return pathsMap.southEastWest;
+      default:
+        return this.getRandomMovablePath();
+    }
+  }
+
+  private getRandomMovablePath(): Path {
+    const randomIndex = Math.random() * this.movablePaths.length;
+    const [removedPath] = this.movablePaths.splice(randomIndex, 1);
+    if (removedPath === undefined) throw new Error("Not enough movable paths");
+    return removedPath;
+  }
+
+  private getRandomTilePos() {
     const randomRow = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
     const randomCol = Math.floor(Math.random() * (this.gridSize - 4)) + 2;
     return [randomRow, randomCol];
   }
 
-  draw(ctx: CanvasRenderingContext2D) {
+  private isWithinGrid(row: number, col: number): boolean {
+    return row >= 0 && row < this.gridSize && col >= 0 && col < this.gridSize;
+  }
+
+  private isCorner(row: number, col: number): boolean {
+    return (
+      (row === 0 && col === 0) ||
+      (row === 0 && col === this.gridSize - 1) ||
+      (row === this.gridSize - 1 && col === 0) ||
+      (row === this.gridSize - 1 && col === this.gridSize - 1)
+    );
+  }
+
+  private isEdge(row: number, col: number): boolean {
+    return (
+      row === 0 ||
+      row === this.gridSize - 1 ||
+      col === 0 ||
+      col === this.gridSize - 1
+    );
+  }
+
+  private isEvenTile(row: number, col: number): boolean {
+    return row % 2 === 0 && col % 2 === 0;
+  }
+
+  private isOddTile(row: number, col: number): boolean {
+    return row % 2 === 1 && col % 2 === 1;
+  }
+
+  private isoToScreen(pos: Point): Point {
+    return new Point(
+      (pos.x - pos.y) * (this.tileWidth / 2) + this.worldWidth / 2,
+      (pos.x + pos.y) * (this.tileHeight / 2)
+    );
+  }
+
+  private screenToIso(
+    screenX: number,
+    screenY: number
+  ): { x: number; y: number } {
+    const centeredX = screenX - this.worldWidth / 2;
+    const x =
+      (centeredX / (this.tileWidth / 2) + screenY / (this.tileHeight / 2)) / 2;
+    const y =
+      (screenY / (this.tileHeight / 2) - centeredX / (this.tileWidth / 2)) / 2;
+    return { x: Math.floor(x), y: Math.floor(y) };
+  }
+
+  public draw(ctx: CanvasRenderingContext2D) {
     this.tiles
       .flat()
       .forEach((tile) => tile && tile.draw(ctx, this.isoToScreen(tile.pos)));
-    this.extraTile?.draw(ctx, this.isoToScreen(new Point(4, -2)));
-    this.drawCrystals(ctx);
+    this.extraTile?.draw(ctx, this.isoToScreen(this.extraTile.pos));
   }
 
-  drawCrystals(ctx: CanvasRenderingContext2D) {
-    this.collectibles.forEach((collectible) => {
-      const pos = this.isoToScreen(collectible.pos);
-      pos.x = pos.x - 40 / 2;
-      pos.y = pos.y - 2;
-      collectible.draw(ctx, pos);
-    });
+  public getTile(screenX: number, screenY: number): Tile | null {
+    const { x, y } = this.screenToIso(screenX, screenY);
+    if (this.isWithinGrid(x, y)) {
+      return this.tiles[x][y];
+    } else if (this.extraTile.pos.x === x && this.extraTile.pos.y === y) {
+      return this.extraTile;
+    }
+    return null;
   }
 
-  public swapWithExtraTile(tile: Tile): Tile {
+  public swapWithExtraTile(tile: Tile) {
     const tilePos = tile.pos;
     const extraTilePos = this.extraTile.pos;
 
@@ -248,39 +294,62 @@ class Grid {
     this.tiles[tilePos.x][tilePos.y] = this.extraTile;
     this.extraTile = tile;
 
-    return this.tiles[tilePos.x][tilePos.y];
+    if (tile === this.hoveredTile) {
+      this.hoveredTile = null;
+    } else {
+      this.hoveredTile = this.tiles[tilePos.x][tilePos.y];
+    }
   }
 
-  rotateTile(tile: Tile) {
-    const rotationMap: { [key: string]: string } = {
-      NORTH: "EAST",
-      EAST: "SOUTH",
-      SOUTH: "WEST",
-      WEST: "NORTH",
+  public rotateTile(tile: Tile) {
+    const imgRotationMap: {
+      [key: string]: Path;
+    } = {
+      "Straight_EW.png": pathsMap.northSouth,
+      "Straight_NS.png": pathsMap.eastWest,
+      "Turn_NW.png": pathsMap.northEast,
+      "Turn_NE.png": pathsMap.southEast,
+      "Turn_SE.png": pathsMap.southWest,
+      "Turn_SW.png": pathsMap.northWest,
+      "Detour_NEW.png": pathsMap.northSouthEast,
+      "Detour_NSE.png": pathsMap.southEastWest,
+      "Detour_SEW.png": pathsMap.northSouthWest,
+      "Detour_NSW.png": pathsMap.northEastWest,
     };
 
-    tile.paths = tile.paths.map((direction) => rotationMap[direction]);
-
-    const imgRotationMap: { [key: string]: string } = {
-      "Straight_EW.png": northSouth,
-      "Straight_NS.png": eastWest,
-      "Turn_NW.png": northEast,
-      "Turn_NE.png": southEast,
-      "Turn_SE.png": southWest,
-      "Turn_SW.png": northWest,
-      "Detour_NEW.png": northSouthEast,
-      "Detour_NSE.png": southEastWest,
-      "Detour_SEW.png": northSouthWest,
-      "Detour_NSW.png": northEastWest,
-    };
-
-    const pathName = tile.pathImg.src.split("/").slice(-1)[0];
+    const [pathName] = tile.pathImg.src.split("/").slice(-1);
     tile.pathImg = this.images.get(
-      imgRotationMap[pathName]
+      imgRotationMap[pathName].imgSrc
     ) as HTMLImageElement;
+    tile.paths = imgRotationMap[pathName].paths;
   }
 
-  shiftAndDisable(tile: Tile) {
+  public enableDisabledTiles() {
+    this.disabledTiles.forEach((tile) => (tile.tileType = "ENABLED"));
+  }
+
+  public disableTileNextToPlayer(player: Player) {
+    const playerPos = player.pos;
+    if (playerPos.x % 2 !== 0 && playerPos.y % 2 !== 0) {
+      return;
+    }
+    let tile: Tile | null = null;
+    if (this.isEdge(playerPos.x - 1, playerPos.y)) {
+      tile = this.tiles[this.gridSize - 1][playerPos.y];
+    } else if (this.isEdge(playerPos.x + 1, playerPos.y)) {
+      tile = this.tiles[0][playerPos.y];
+    } else if (this.isEdge(playerPos.x, playerPos.y - 1)) {
+      tile = this.tiles[playerPos.x][this.gridSize - 1];
+    } else if (this.isEdge(playerPos.x, playerPos.y + 1)) {
+      tile = this.tiles[playerPos.x][0];
+    }
+    if (tile) {
+      tile.tileType = "DISABLED";
+      this.disabledTiles.push(tile);
+    }
+  }
+
+  public shiftAndDisable(tile: Tile) {
     this.enableDisabledTiles();
     const { x: row, y: col } = tile.pos;
     let disabledTile: Tile | null = null;
@@ -301,9 +370,10 @@ class Grid {
       disabledTile.tileType = "DISABLED";
       this.disabledTiles.push(disabledTile);
     }
+    this.swapWithExtraTile(this.hoveredTile!);
   }
 
-  shiftRow(tile: Tile, direction: "NORTH" | "SOUTH") {
+  private shiftRow(tile: Tile, direction: "NORTH" | "SOUTH") {
     const tiles = this.tiles;
     const { x: row, y: col } = tile.pos;
 
@@ -334,7 +404,7 @@ class Grid {
     }
   }
 
-  shiftCol(tile: Tile, direction: "EAST" | "WEST") {
+  private shiftCol(tile: Tile, direction: "EAST" | "WEST") {
     const tiles = this.tiles;
     const { x: row, y: col } = tile.pos;
 
@@ -365,10 +435,14 @@ class Grid {
     }
   }
 
-  public riseConnectedTiles(tile: Tile, visited: Set<string> = new Set()) {
+  public riseConnectedTiles(player: Player) {
+    const pos = player.pos;
+    this.riseTiles(this.tiles[pos.x][pos.y]);
+  }
+
+  private riseTiles(tile: Tile, visited: Set<string> = new Set()) {
     const { pos, paths } = tile;
-    const x = pos.x;
-    const y = pos.y;
+    const { x, y } = pos;
 
     const key = `${x},${y}`;
     if (visited.has(key)) return;
@@ -381,7 +455,7 @@ class Grid {
       y > 1 &&
       this.tiles[x][y - 1].paths.includes("SOUTH")
     ) {
-      this.riseConnectedTiles(this.tiles[x][y - 1], visited);
+      this.riseTiles(this.tiles[x][y - 1], visited);
     }
 
     if (
@@ -389,7 +463,7 @@ class Grid {
       y < this.gridSize - 2 &&
       this.tiles[x][y + 1].paths.includes("NORTH")
     ) {
-      this.riseConnectedTiles(this.tiles[x][y + 1], visited);
+      this.riseTiles(this.tiles[x][y + 1], visited);
     }
 
     if (
@@ -397,7 +471,7 @@ class Grid {
       x < this.gridSize - 2 &&
       this.tiles[x + 1][y].paths.includes("WEST")
     ) {
-      this.riseConnectedTiles(this.tiles[x + 1][y], visited);
+      this.riseTiles(this.tiles[x + 1][y], visited);
     }
 
     if (
@@ -405,7 +479,7 @@ class Grid {
       x > 1 &&
       this.tiles[x - 1][y].paths.includes("EAST")
     ) {
-      this.riseConnectedTiles(this.tiles[x - 1][y], visited);
+      this.riseTiles(this.tiles[x - 1][y], visited);
     }
   }
 
@@ -413,85 +487,8 @@ class Grid {
     this.tiles.flat().forEach((tile) => tile && tile.setIsConnected(false));
   }
 
-  public getTile(screenX: number, screenY: number): Tile | null {
-    const { x, y } = this.screenToIso(screenX, screenY);
-    if (this.isWithinGrid(x, y)) {
-      return this.tiles[x][y];
-    } else if (this.extraTile.pos.x === x && this.extraTile.pos.y === y) {
-      return this.extraTile;
-    }
-    return null;
-  }
-
-  private isWithinGrid(row: number, col: number): boolean {
-    return row >= 0 && row < this.gridSize && col >= 0 && col < this.gridSize;
-  }
-
-  public isCorner(row: number, col: number): boolean {
-    return (
-      (row === 0 && col === 0) ||
-      (row === 0 && col === this.gridSize - 1) ||
-      (row === this.gridSize - 1 && col === 0) ||
-      (row === this.gridSize - 1 && col === this.gridSize - 1)
-    );
-  }
-
-  public isEdge(row: number, col: number): boolean {
-    return (
-      row === 0 ||
-      row === this.gridSize - 1 ||
-      col === 0 ||
-      col === this.gridSize - 1
-    );
-  }
-
-  public isEvenTile(row: number, col: number): boolean {
-    return row % 2 === 0 && col % 2 === 0;
-  }
-
-  private isOddTile(row: number, col: number): boolean {
-    return row % 2 === 1 && col % 2 === 1;
-  }
-
-  isoToScreen(pos: Point): Point {
-    return new Point(
-      (pos.x - pos.y) * (this.tileWidth / 2) + this.worldWidth / 2,
-      (pos.x + pos.y) * (this.tileHeight / 2)
-    );
-  }
-
-  screenToIso(screenX: number, screenY: number): { x: number; y: number } {
-    const centeredX = screenX - this.worldWidth / 2;
-    const x =
-      (centeredX / (this.tileWidth / 2) + screenY / (this.tileHeight / 2)) / 2;
-    const y =
-      (screenY / (this.tileHeight / 2) - centeredX / (this.tileWidth / 2)) / 2;
-    return { x: Math.floor(x), y: Math.floor(y) };
-  }
-
-  disableTileNextToPlayer(player: Player) {
-    const playerPos = player.pos;
-    if (playerPos.x % 2 !== 0 && playerPos.y % 2 !== 0) {
-      return;
-    }
-    let tile: Tile | null = null;
-    if (this.isEdge(playerPos.x - 1, playerPos.y)) {
-      tile = this.tiles[this.gridSize - 1][playerPos.y];
-    } else if (this.isEdge(playerPos.x + 1, playerPos.y)) {
-      tile = this.tiles[0][playerPos.y];
-    } else if (this.isEdge(playerPos.x, playerPos.y - 1)) {
-      tile = this.tiles[playerPos.x][this.gridSize - 1];
-    } else if (this.isEdge(playerPos.x, playerPos.y + 1)) {
-      tile = this.tiles[playerPos.x][0];
-    }
-    if (tile) {
-      tile.tileType = "DISABLED";
-      this.disabledTiles.push(tile);
-    }
-  }
-
-  enableDisabledTiles() {
-    this.disabledTiles.forEach((tile) => (tile.tileType = "ENABLED"));
+  public getPlayer(index: number): Player {
+    return this.players[index];
   }
 }
 

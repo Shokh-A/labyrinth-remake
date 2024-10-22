@@ -14,9 +14,9 @@ class Tile extends GameObject {
     public pathImg: HTMLImageElement,
     public paths: string[] = [],
     public tileType: TileType,
+    public isConnected: boolean = false,
     public collectible: Collectible | null = null,
-    public player: Player | null = null,
-    public isConnected: boolean = false
+    public player: Player | null = null
   ) {
     super(pos, width, height);
   }
@@ -33,6 +33,11 @@ class Tile extends GameObject {
     this.drawFace(ctx, pos, colors.top, this.drawTopFace.bind(this), isFilled);
     this.drawFace(ctx, pos, colors.left, this.drawLeftFace.bind(this));
     this.drawFace(ctx, pos, colors.right, this.drawRightFace.bind(this));
+
+    // Reset the position, pos is just reference any changes made into it will reflect in the original object
+    pos.y -= this.offsetY;
+    this.collectible?.draw(ctx, new Point(pos.x, pos.y));
+    this.player?.draw(ctx, new Point(pos.x, pos.y));
   }
 
   private getTileColors() {
@@ -116,24 +121,25 @@ class Tile extends GameObject {
 
   public setPos(pos: Point) {
     this.pos = pos;
-    if (this.collectible) {
-      this.collectible.pos = pos;
-    }
-    if (this.player) {
-      console.log("Setting player pos to", pos);
-      this.player.pos = pos;
-    }
+    if (this.collectible) this.collectible.pos = pos;
+    if (this.player) this.player.pos = pos;
   }
 
   public setIsConnected(isConnected: boolean) {
-    this.offsetY = isConnected ? -10 : 0;
-    if (this.collectible) {
-      this.collectible.offsetY = isConnected ? -10 : 0;
-    }
-    if (this.player) {
-      this.player.offsetY = isConnected ? -10 : 0;
-    }
     this.isConnected = isConnected;
+    this.offsetY = isConnected ? -10 : 0;
+    if (this.collectible) this.collectible.offsetY = isConnected ? -10 : 0;
+    if (this.player) this.player.offsetY = isConnected ? -10 : 0;
+  }
+
+  public setCollectible(collectible: Collectible) {
+    this.collectible = collectible;
+    this.collectible.pos = this.pos;
+  }
+
+  public setPlayer(player: Player | null) {
+    this.player = player;
+    if (this.player) this.player.pos = this.pos;
   }
 }
 

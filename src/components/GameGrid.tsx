@@ -11,7 +11,7 @@ const NUM_OF_COLLECTIBLES = 4;
 const GameGrid: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [gameEngine] = useState(
-    new GameEngine(WORLD_WIDTH, WORLD_HEIGHT, TILE_WIDTH, TILE_DEPTH)
+    new GameEngine(WORLD_WIDTH, TILE_WIDTH, TILE_DEPTH)
   );
 
   useEffect(() => {

@@ -25,7 +25,6 @@ class Tile extends GameObject {
 
   draw(ctx: CanvasRenderingContext2D) {
     const pos = this.pos.copy();
-    pos.y += this.offsetY;
 
     const colors = this.getTileColors();
     const isFilled =
@@ -38,7 +37,6 @@ class Tile extends GameObject {
     this.drawFace(ctx, pos, colors.right, this.drawRightFace.bind(this));
 
     // Reset the position, pos is just reference any changes made into it will reflect in the original object
-    pos.y -= this.offsetY;
     this.collectible?.draw(ctx, new Point(pos.x, pos.y));
     this.player?.draw(ctx, new Point(pos.x, pos.y));
   }
@@ -122,11 +120,16 @@ class Tile extends GameObject {
     ctx.lineTo(pos.x + this.width / 2, pos.y + this.height / 2 + this.depth);
   }
 
-  public setTarget(pos: Point, direction: string) {
-    this.target = { pos, direction };
-  }
-
   public update() {
+    if (
+      this.target &&
+      (this.target.direction === "UP" || this.target.direction === "DOWN")
+    ) {
+      this.pos.y += (1 / 2) * (this.target.direction === "DOWN" ? 1 : -1);
+      if (this.pos.y === this.target.pos.y) this.target = null;
+      return;
+    }
+
     if (this.target && this.target.direction === "SOUTH") {
       this.pos.x -= 1;
       this.pos.y += 1 / 2;
@@ -152,11 +155,17 @@ class Tile extends GameObject {
     if (this.player) this.player.pos = pos;
   }
 
+  public setTargetPos(pos: Point, direction: string) {
+    this.target = { pos, direction };
+  }
+
   public setIsConnected(isConnected: boolean) {
     this.isConnected = isConnected;
-    this.offsetY = isConnected ? -10 : 0;
-    if (this.collectible) this.collectible.offsetY = isConnected ? -10 : 0;
-    if (this.player) this.player.offsetY = isConnected ? -10 : 0;
+    const pos = this.pos.copy();
+    pos.y += isConnected ? -10 : 10;
+    this.setTargetPos(pos, isConnected ? "UP" : "DOWN");
+    // if (this.collectible) this.collectible.offsetY = isConnected ? -10 : 0;
+    // if (this.player) this.player.offsetY = isConnected ? -10 : 0;
   }
 
   public setCollectible(collectible: Collectible) {

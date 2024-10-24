@@ -105,24 +105,6 @@ class Grid {
     this.extraTile.paths = paths;
   }
 
-  private alignTilesInGrid() {
-    for (let row = 0; row < this.gridSize; row++) {
-      for (let col = 0; col < this.gridSize; col++) {
-        if (this.tiles[row][col]) {
-          this.tiles[row][col].setPos(this.isoToScreen(new Point(row, col)));
-          console.log(
-            row,
-            col,
-            ":",
-            this.screenToIso(this.tiles[row][col].pos)
-          );
-        }
-      }
-    }
-    this.extraTile.setPos(this.isoToScreen(new Point(4, -2)));
-    console.log(4, -2, ":", this.screenToIso(this.extraTile.pos));
-  }
-
   private initializeCollectibles(numOfCollectibles: number) {
     if (numOfCollectibles > 24) throw new Error("Collectibles number exceeded");
 
@@ -274,69 +256,58 @@ class Grid {
     );
   }
 
-  public screenToIso(screenPos: Point): { x: number; y: number } {
+  public screenToIso(
+    screenPos: Point,
+    hasOffset: boolean = false
+  ): { x: number; y: number } {
+    const screenY = screenPos.y + (hasOffset ? 10 : 0);
     const centeredX = screenPos.x - this.worldWidth / 2;
     const x =
-      (centeredX / (this.tileWidth / 2) + screenPos.y / (this.tileHeight / 2)) /
-      2;
+      (centeredX / (this.tileWidth / 2) + screenY / (this.tileHeight / 2)) / 2;
     const y =
-      (screenPos.y / (this.tileHeight / 2) - centeredX / (this.tileWidth / 2)) /
-      2;
+      (screenY / (this.tileHeight / 2) - centeredX / (this.tileWidth / 2)) / 2;
     return { x: Math.floor(x), y: Math.floor(y) };
   }
 
   public draw(ctx: CanvasRenderingContext2D) {
     ctx.clearRect(0, 0, this.worldWidth, this.worldWidth);
-    this.tiles.flat().forEach((tile) => tile && tile.draw(ctx));
+    if (
+      this.animationDirection === "NORTH" ||
+      this.animationDirection === "SOUTH"
+    ) {
+      this.tiles.flat().forEach((tile) => {
+        if (tile) {
+          if (tile.target) tile.update();
+          tile.draw(ctx);
+        }
+      });
+    } else if (
+      this.animationDirection === "EAST" ||
+      this.animationDirection === "WEST"
+    ) {
+      for (let col = 0; col < this.gridSize; col++) {
+        for (let row = 0; row < this.gridSize; row++) {
+          const tile = this.tiles[row][col];
+          if (tile) {
+            if (tile.target) tile.update();
+            tile.draw(ctx);
+          }
+        }
+      }
+    }
+
     this.extraTile.draw(ctx);
   }
 
   public animate(ctx: CanvasRenderingContext2D): Promise<void> {
     return new Promise((resolve) => {
       const animationStep = () => {
-        ctx.clearRect(0, 0, this.worldWidth, this.worldWidth);
-        let hasActiveTiles = false;
-
-        if (
-          this.animationDirection === "EAST" ||
-          this.animationDirection === "WEST"
-        ) {
-          for (let col = 0; col < this.gridSize; col++) {
-            for (let row = 0; row < this.gridSize; row++) {
-              const tile = this.tiles[row][col];
-              if (tile) {
-                tile.update();
-                tile.draw(ctx);
-                if (tile.target !== null) {
-                  hasActiveTiles = true;
-                }
-              }
-            }
-          }
-        } else if (
-          this.animationDirection === "SOUTH" ||
-          this.animationDirection === "NORTH"
-        ) {
-          this.tiles = this.tiles.map((row) =>
-            row.map((tile) => {
-              if (tile) {
-                tile.update();
-                tile.draw(ctx);
-                if (tile.target !== null) {
-                  hasActiveTiles = true;
-                }
-              }
-              return tile;
-            })
-          );
-        }
-        this.extraTile.draw(ctx);
-
-        if (hasActiveTiles) {
+        console.log("Animating");
+        this.draw(ctx);
+        if (this.tiles.flat().some((tile) => tile && tile.target)) {
           requestAnimationFrame(animationStep);
         } else {
-          this.swapWithExtraTile(this.hoveredTile!);
-          this.draw(ctx);
+          console.log("Animation finished");
           resolve();
         }
       };
@@ -345,8 +316,8 @@ class Grid {
     });
   }
 
-  public getTile(screenPos: Point): Tile | null {
-    const { x, y } = this.screenToIso(screenPos);
+  public getTile(screenPos: Point, moving: boolean = false): Tile | null {
+    const { x, y } = this.screenToIso(screenPos, moving);
     if (this.isWithinGrid(x, y)) {
       return this.tiles[x][y];
     } else {
@@ -424,22 +395,18 @@ class Grid {
     }
   }
 
-  public shiftAndRise(ctx: CanvasRenderingContext2D, tile: Tile) {
+  public async shiftAndRise(ctx: CanvasRenderingContext2D, tile: Tile) {
     this.enableDisabledTiles();
     const { x: row, y: col } = this.screenToIso(tile.pos);
-    if (col === 0) {
-      this.shiftRow(tile, "SOUTH");
-    } else if (col === this.gridSize - 1) {
-      this.shiftRow(tile, "NORTH");
-    } else if (row === 0) {
-      this.shiftCol(tile, "EAST");
-    } else if (row === this.gridSize - 1) {
-      this.shiftCol(tile, "WEST");
-    }
-    this.animate(ctx).then(() => {
-      console.log("Rising connected tiles");
+    if (col === 0) this.shiftRow(tile, "SOUTH");
+    else if (col === this.gridSize - 1) this.shiftRow(tile, "NORTH");
+    else if (row === 0) this.shiftCol(tile, "EAST");
+    else if (row === this.gridSize - 1) this.shiftCol(tile, "WEST");
+
+    await this.animate(ctx).then(() => {
+      this.swapWithExtraTile(this.hoveredTile!);
       this.riseConnectedTiles(this.players[0]);
-      this.draw(ctx);
+      this.animate(ctx);
     });
   }
 
@@ -448,35 +415,25 @@ class Grid {
     const { x: row, y: col } = this.screenToIso(tile.pos);
     this.animationDirection = direction;
 
-    if (direction === "SOUTH") {
-      const lastlast = tiles[row][this.gridSize - 1];
-      lastlast.setPos(this.isoToScreen(new Point(row, 0)));
-      const lastTile = tiles[row][this.gridSize - 2];
+    const lastTile = tiles[row][(this.gridSize - 1 - col) % this.gridSize];
+    lastTile.setPos(this.isoToScreen(new Point(row, col)));
+    this.hoveredTile = tiles[row][col === 0 ? this.gridSize - 2 : 1];
 
-      this.hoveredTile = lastTile;
+    if (direction === "SOUTH") {
       for (let i = this.gridSize - 2; i >= 0; i--) {
         const newPos = new Point(row, (i % (this.gridSize - 1)) + 1);
-        tiles[row][i].setTarget(this.isoToScreen(newPos), "SOUTH");
-        if (i === 0) continue;
-        tiles[row][i] = tiles[row][i - 1];
+        tiles[row][i].setTargetPos(this.isoToScreen(newPos), "SOUTH");
+        tiles[row][i] = tiles[row][(this.gridSize - 1 + i) % this.gridSize];
       }
-      tiles[row][0] = lastlast;
-      tiles[row][8] = lastTile;
     } else if (direction === "NORTH") {
-      const lastlast = tiles[row][0];
-      lastlast.setPos(this.isoToScreen(new Point(row, this.gridSize - 1)));
-      const lastTile = tiles[row][1];
-      this.hoveredTile = lastTile;
-
       for (let i = 1; i < this.gridSize; i++) {
         const newPos = new Point(row, (i - 1) % (this.gridSize - 1));
-        tiles[row][i].setTarget(this.isoToScreen(newPos), "NORTH");
-        if (i === 8) continue;
-        tiles[row][i] = tiles[row][i + 1];
+        tiles[row][i].setTargetPos(this.isoToScreen(newPos), "NORTH");
+        tiles[row][i] = tiles[row][(i + 1) % this.gridSize];
       }
-      tiles[row][8] = lastlast;
-      tiles[row][0] = lastTile;
     }
+
+    tiles[row][(this.gridSize - 1 - col) % this.gridSize] = this.hoveredTile!;
   }
 
   private shiftCol(tile: Tile, direction: "EAST" | "WEST") {
@@ -484,33 +441,25 @@ class Grid {
     const { x: row, y: col } = this.screenToIso(tile.pos);
     this.animationDirection = direction;
 
+    const lastTile = tiles[(this.gridSize - 1 - row) % this.gridSize][col];
+    lastTile.setPos(this.isoToScreen(new Point(row, col)));
+    this.hoveredTile = tiles[row === 0 ? this.gridSize - 2 : 1][col];
+
     if (direction === "EAST") {
-      const lastlast = tiles[this.gridSize - 1][col];
-      lastlast.setPos(this.isoToScreen(new Point(0, col)));
-      const lastTile = tiles[this.gridSize - 2][col];
-      this.hoveredTile = lastTile;
       for (let i = this.gridSize - 2; i >= 0; i--) {
         const newPos = new Point((i % (this.gridSize - 1)) + 1, col);
-        tiles[i][col].setTarget(this.isoToScreen(newPos), "EAST");
-        if (i === 0) continue;
-        tiles[i][col] = tiles[i - 1][col];
+        tiles[i][col].setTargetPos(this.isoToScreen(newPos), "EAST");
+        tiles[i][col] = tiles[(this.gridSize - 1 + i) % this.gridSize][col];
       }
-      tiles[0][col] = lastlast;
-      tiles[8][col] = lastTile;
     } else if (direction === "WEST") {
-      const lastlast = tiles[0][col];
-      lastlast.setPos(this.isoToScreen(new Point(this.gridSize - 1, col)));
-      const lastTile = tiles[1][col];
-      this.hoveredTile = lastTile;
       for (let i = 1; i < this.gridSize; i++) {
         const newPos = new Point((i - 1) % (this.gridSize - 1), col);
-        tiles[i][col].setTarget(this.isoToScreen(newPos), "WEST");
-        if (i === 8) continue;
-        tiles[i][col] = tiles[i + 1][col];
+        tiles[i][col].setTargetPos(this.isoToScreen(newPos), "WEST");
+        tiles[i][col] = tiles[(i + 1) % this.gridSize][col];
       }
-      tiles[8][col] = lastlast;
-      tiles[0][col] = lastTile;
     }
+
+    tiles[(this.gridSize - 1 - row) % this.gridSize][col] = this.hoveredTile;
   }
 
   public riseConnectedTiles(player: Player) {
@@ -562,7 +511,11 @@ class Grid {
   }
 
   public lowerTiles() {
-    this.tiles.flat().forEach((tile) => tile && tile.setIsConnected(false));
+    this.tiles
+      .flat()
+      .forEach(
+        (tile) => tile && tile.isConnected && tile.setIsConnected(false)
+      );
   }
 
   public getPlayer(index: number): Player {

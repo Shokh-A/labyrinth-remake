@@ -18,7 +18,7 @@ class Tile extends GameObject {
     public collectible: Collectible | null = null,
     public player: Player | null = null,
 
-    public target: Point | null = null
+    public target: { pos: Point; direction: string } | null = null
   ) {
     super(pos, width, height);
   }
@@ -122,8 +122,28 @@ class Tile extends GameObject {
     ctx.lineTo(pos.x + this.width / 2, pos.y + this.height / 2 + this.depth);
   }
 
-  public setTarget(target: Point) {
-    this.target = target;
+  public setTarget(pos: Point, direction: string) {
+    this.target = { pos, direction };
+  }
+
+  public update() {
+    if (this.target && this.target.direction === "SOUTH") {
+      this.pos.x -= 1;
+      this.pos.y += 1 / 2;
+    } else if (this.target && this.target.direction === "NORTH") {
+      this.pos.x += 1;
+      this.pos.y -= 1 / 2;
+    } else if (this.target && this.target.direction === "EAST") {
+      this.pos.x += 1;
+      this.pos.y += 1 / 2;
+    } else if (this.target && this.target.direction === "WEST") {
+      this.pos.x -= 1;
+      this.pos.y -= 1 / 2;
+    }
+
+    if (this.target && this.pos.equals(this.target.pos)) {
+      this.target = null;
+    }
   }
 
   public setPos(pos: Point) {

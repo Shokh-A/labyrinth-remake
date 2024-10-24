@@ -53,25 +53,18 @@ class GameEngine {
   ): void {
     const tile = this.grid.getTile(new Point(screenX, screenY));
     if (!tile) return;
+    console.log("Clicked on tile:", this.grid.screenToIso(tile.pos));
 
     const curPlayer = this.grid.getPlayer(this.curPlayerIndex);
     if (this.gameState === "SHIFTING") {
       if (tile === this.grid.extraTile) this.grid.rotateTile(tile);
-      else {
-        this.shiftTiles(tile, curPlayer);
-        // this.grid.animate(ctx);
+      else if (tile === this.grid.hoveredTile) {
+        this.grid.shiftAndRise(ctx, tile);
+        this.gameState = "MOVING";
       }
       this.draw(ctx);
     } else if (this.gameState === "MOVING" && tile.isConnected) {
       this.movePlayer(ctx, tile, curPlayer);
-    }
-  }
-
-  private shiftTiles(tile: Tile, player: Player): void {
-    if (tile === this.grid.hoveredTile) {
-      this.grid.shiftAndDisable(tile);
-      this.grid.riseConnectedTiles(player);
-      this.gameState = "MOVING";
     }
   }
 

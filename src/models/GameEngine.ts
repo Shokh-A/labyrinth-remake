@@ -61,12 +61,13 @@ class GameEngine {
 
     const curPlayer = this.grid.getPlayer(this.curPlayerIndex);
     if (this.gameState === "SHIFTING") {
-      if (tile === this.grid.extraTile) this.grid.rotateTile(tile);
-      else if (tile === this.grid.hoveredTile) {
+      if (tile === this.grid.extraTile) {
+        this.grid.rotateTile(tile);
+        this.draw(ctx);
+      } else if (tile === this.grid.hoveredTile) {
         this.grid.shiftAndRise(ctx, tile);
         this.gameState = "MOVING";
       }
-      this.draw(ctx);
     } else if (this.gameState === "MOVING" && tile.isConnected) {
       this.movePlayer(ctx, tile, curPlayer);
     }
@@ -78,16 +79,14 @@ class GameEngine {
     player: Player
   ): void {
     const { x: row, y: col } = this.grid.screenToIso(player.pos, true);
-    console.log(this.grid.tiles[row][col]);
+
     this.grid.tiles[row][col].setPlayer(null);
     tile.setPlayer(player);
 
-    this.grid.lowerTiles();
-    this.grid.animate(ctx);
+    this.grid.lowerTiles(ctx);
 
     this.curPlayerIndex = (this.curPlayerIndex + 1) % 2;
     this.gameState = "SHIFTING";
-    this.draw(ctx);
   }
 }
 

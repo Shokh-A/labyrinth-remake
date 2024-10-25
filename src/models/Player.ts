@@ -2,12 +2,24 @@ import GameObject from "./GameObject";
 import Point from "./Point";
 
 class Player extends GameObject {
-  constructor(pos: Point, public img: HTMLImageElement) {
+  private frame: number = 1;
+
+  constructor(
+    pos: Point,
+    public imgs: {
+      [key: string]: HTMLImageElement;
+    }
+  ) {
     super(pos, 60, 60);
   }
 
+  update() {
+    this.frame = 1 + ((this.frame + 1) % 3);
+    console.log("this.frame", this.frame);
+  }
+
   draw(ctx: CanvasRenderingContext2D, pos: Point) {
-    const sx = 350;
+    const sx = 350 * this.frame;
     const sy = 700;
     const sWidth = 350;
     const sHeight = 350;
@@ -15,7 +27,7 @@ class Player extends GameObject {
     pos.y = pos.y - this.height / 2;
 
     ctx.drawImage(
-      this.img,
+      this.imgs.EAST,
       sx,
       sy,
       sWidth,

@@ -1,5 +1,8 @@
 import crystalsImg from "../assets/images/crystals/Crystals.png";
-import playerImg from "../assets/images/sprites/CharacterSheet_CharacterFront.png";
+import playerImgSouth from "../assets/images/sprites/Front_S.png";
+import playerImgEast from "../assets/images/sprites/Front_E.png";
+import playerImgNorth from "../assets/images/sprites/Back_N.png";
+import playerImgWest from "../assets/images/sprites/Back_W.png";
 import { Path, pathsMap, preloadImages } from "../services/imageLoader";
 import { Collectible, Player, Point, Tile } from "./index";
 
@@ -66,7 +69,10 @@ class Grid {
     const imgSources = [
       ...Object.values(pathsMap).map((path) => path.imgSrc),
       crystalsImg,
-      playerImg,
+      playerImgSouth,
+      playerImgEast,
+      playerImgNorth,
+      playerImgWest,
     ];
     this.images = await preloadImages(imgSources);
 
@@ -135,11 +141,17 @@ class Grid {
       new Point(7, 1),
     ];
 
+    const playerImgs: {
+      [key: string]: HTMLImageElement;
+    } = {
+      SOUTH: this.images.get(playerImgSouth) as HTMLImageElement,
+      EAST: this.images.get(playerImgEast) as HTMLImageElement,
+      NORTH: this.images.get(playerImgNorth) as HTMLImageElement,
+      WEST: this.images.get(playerImgWest) as HTMLImageElement,
+    };
+
     for (let i = 0; i < numOfPlayers; i++) {
-      const player = new Player(
-        this.isoToScreen(spawnPoints[i]),
-        this.images.get(playerImg) as HTMLImageElement
-      );
+      const player = new Player(this.isoToScreen(spawnPoints[i]), playerImgs);
       this.tiles[spawnPoints[i].x][spawnPoints[i].y].setPlayer(player);
       this.players.push(player);
     }
@@ -316,8 +328,8 @@ class Grid {
     });
   }
 
-  public getTile(screenPos: Point, moving: boolean = false): Tile | null {
-    const { x, y } = this.screenToIso(screenPos, moving);
+  public getTile(screenPos: Point, hasOffset: boolean = false): Tile | null {
+    const { x, y } = this.screenToIso(screenPos, hasOffset);
     if (this.isWithinGrid(x, y)) {
       return this.tiles[x][y];
     } else {
@@ -405,8 +417,7 @@ class Grid {
 
     await this.animate(ctx).then(() => {
       this.swapWithExtraTile(this.hoveredTile!);
-      this.riseConnectedTiles(this.players[0]);
-      this.animate(ctx);
+      this.riseConnectedTiles(ctx, this.players[0]);
     });
   }
 
@@ -462,9 +473,22 @@ class Grid {
     tiles[(this.gridSize - 1 - row) % this.gridSize][col] = this.hoveredTile;
   }
 
-  public riseConnectedTiles(player: Player) {
+  public async riseConnectedTiles(
+    ctx: CanvasRenderingContext2D,
+    player: Player
+  ) {
     const { x: row, y: col } = this.screenToIso(player.pos);
     this.riseTiles(this.tiles[row][col]);
+    this.setColorAnimation();
+    await this.animate(ctx);
+  }
+
+  private setColorAnimation() {
+    this.tiles.flat().forEach((tile) => {
+      if (tile && !tile.isConnected) {
+        tile.setTargetPos(tile.pos, "DARKER", 0.7);
+      }
+    });
   }
 
   private riseTiles(tile: Tile, visited: Set<string> = new Set()) {
@@ -510,12 +534,12 @@ class Grid {
     }
   }
 
-  public lowerTiles() {
-    this.tiles
-      .flat()
-      .forEach(
-        (tile) => tile && tile.isConnected && tile.setIsConnected(false)
-      );
+  public async lowerTiles(ctx: CanvasRenderingContext2D) {
+    this.tiles.flat().forEach((tile) => {
+      if (tile && tile.isConnected) tile.setIsConnected(false);
+      else if (tile) tile.setTargetPos(tile.pos, "BRIGHTER", 0);
+    });
+    await this.animate(ctx);
   }
 
   public getPlayer(index: number): Player {

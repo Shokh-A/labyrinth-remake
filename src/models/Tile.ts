@@ -18,7 +18,13 @@ class Tile extends GameObject {
     public collectible: Collectible | null = null,
     public player: Player | null = null,
 
-    public target: { pos: Point; direction: string } | null = null
+    private brightness: number = 0,
+
+    public target: {
+      pos: Point;
+      direction: string;
+      brightness: number;
+    } | null = null
   ) {
     super(pos, width, height);
   }
@@ -30,7 +36,8 @@ class Tile extends GameObject {
     const isFilled =
       this.tileType === "ENABLED" ||
       this.tileType === "DISABLED" ||
-      this.tileType === "FIXED";
+      this.tileType === "FIXED" ||
+      this.tileType === "MOVABLE";
 
     this.drawFace(ctx, pos, colors.top, this.drawTopFace.bind(this), isFilled);
     this.drawFace(ctx, pos, colors.left, this.drawLeftFace.bind(this));
@@ -45,7 +52,10 @@ class Tile extends GameObject {
     switch (this.tileType) {
       case "FIXED":
         return {
-          top: "rgba(204, 128, 0, 0.3)",
+          top:
+            this.brightness > 0 || this.isConnected
+              ? `rgba(144, 238, 144, ${this.brightness})`
+              : "rgba(204, 128, 0, 0.3)",
           left: "rgba(144, 238, 144, 0.3)",
           right: "rgba(144, 238, 144, 0.3)",
         };
@@ -61,9 +71,15 @@ class Tile extends GameObject {
           left: "rgba(220, 20, 60, 0.3)",
           right: "rgba(139, 0, 0, 0.3)",
         };
+      case "MOVABLE":
+        return {
+          top: `rgba(144, 238, 144, ${this.brightness})`,
+          left: "#4d7224",
+          right: "#2f4b13",
+        };
       default:
         return {
-          top: "rgba(255, 99, 132, 0.3)",
+          top: "rgba(144, 238, 144, 0.7)",
           left: "#4d7224",
           right: "#2f4b13",
         };
@@ -121,30 +137,47 @@ class Tile extends GameObject {
   }
 
   public update() {
-    if (
-      this.target &&
-      (this.target.direction === "UP" || this.target.direction === "DOWN")
-    ) {
+    if (!this.target) return;
+
+    if (this.target.direction === "UP" || this.target.direction === "DOWN") {
       this.pos.y += (1 / 2) * (this.target.direction === "DOWN" ? 1 : -1);
       if (this.pos.y === this.target.pos.y) this.target = null;
       return;
     }
 
-    if (this.target && this.target.direction === "SOUTH") {
+    if (this.target.direction === "SOUTH") {
+      if (this.player) this.player.update();
       this.pos.x -= 1;
       this.pos.y += 1 / 2;
-    } else if (this.target && this.target.direction === "NORTH") {
+    } else if (this.target.direction === "NORTH") {
+      if (this.player) this.player.update();
       this.pos.x += 1;
       this.pos.y -= 1 / 2;
-    } else if (this.target && this.target.direction === "EAST") {
+    } else if (this.target.direction === "EAST") {
       this.pos.x += 1;
       this.pos.y += 1 / 2;
-    } else if (this.target && this.target.direction === "WEST") {
+    } else if (this.target.direction === "WEST") {
       this.pos.x -= 1;
       this.pos.y -= 1 / 2;
     }
+    if (
+      this.target.direction === "DARKER" &&
+      this.brightness < this.target.brightness
+    ) {
+      this.brightness = parseFloat((this.brightness + 0.05).toFixed(2));
+      console.log("Darker", this.brightness);
+    } else if (
+      this.target.direction === "BRIGHTER" &&
+      this.brightness > this.target.brightness
+    ) {
+      this.brightness = parseFloat((this.brightness - 0.05).toFixed(2));
+      console.log("Brighter", this.brightness);
+    }
 
-    if (this.target && this.pos.equals(this.target.pos)) {
+    if (
+      this.pos.equals(this.target.pos) &&
+      this.brightness === this.target.brightness
+    ) {
       this.target = null;
     }
   }
@@ -155,8 +188,8 @@ class Tile extends GameObject {
     if (this.player) this.player.pos = pos;
   }
 
-  public setTargetPos(pos: Point, direction: string) {
-    this.target = { pos, direction };
+  public setTargetPos(pos: Point, direction: string, brightness: number = 0) {
+    this.target = { pos, direction, brightness };
   }
 
   public setIsConnected(isConnected: boolean) {
@@ -164,8 +197,6 @@ class Tile extends GameObject {
     const pos = this.pos.copy();
     pos.y += isConnected ? -10 : 10;
     this.setTargetPos(pos, isConnected ? "UP" : "DOWN");
-    // if (this.collectible) this.collectible.offsetY = isConnected ? -10 : 0;
-    // if (this.player) this.player.offsetY = isConnected ? -10 : 0;
   }
 
   public setCollectible(collectible: Collectible) {

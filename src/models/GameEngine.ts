@@ -69,24 +69,12 @@ class GameEngine {
         this.gameState = "MOVING";
       }
     } else if (this.gameState === "MOVING" && tile.isConnected) {
-      this.movePlayer(ctx, tile, curPlayer);
+      this.grid.movePlayer(ctx, tile, curPlayer);
+      // this.grid.lowerTiles(ctx);
+
+      // this.curPlayerIndex = (this.curPlayerIndex + 1) % 2;
+      this.gameState = "SHIFTING";
     }
-  }
-
-  private movePlayer(
-    ctx: CanvasRenderingContext2D,
-    tile: Tile,
-    player: Player
-  ): void {
-    const { x: row, y: col } = this.grid.screenToIso(player.pos, true);
-
-    this.grid.tiles[row][col].setPlayer(null);
-    tile.setPlayer(player);
-
-    this.grid.lowerTiles(ctx);
-
-    this.curPlayerIndex = (this.curPlayerIndex + 1) % 2;
-    this.gameState = "SHIFTING";
   }
 }
 

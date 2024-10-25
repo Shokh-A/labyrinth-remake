@@ -289,7 +289,7 @@ class Grid {
     ) {
       this.tiles.flat().forEach((tile) => {
         if (tile) {
-          if (tile.target) tile.update();
+          tile.update();
           tile.draw(ctx);
         }
       });
@@ -301,7 +301,7 @@ class Grid {
         for (let row = 0; row < this.gridSize; row++) {
           const tile = this.tiles[row][col];
           if (tile) {
-            if (tile.target) tile.update();
+            tile.update();
             tile.draw(ctx);
           }
         }
@@ -313,10 +313,16 @@ class Grid {
 
   public animate(ctx: CanvasRenderingContext2D): Promise<void> {
     return new Promise((resolve) => {
-      const animationStep = () => {
-        console.log("Animating");
+      const animationStep = (timestamp: number) => {
         this.draw(ctx);
-        if (this.tiles.flat().some((tile) => tile && tile.target)) {
+        if (this.players[0].target) {
+          this.players[0].update(timestamp);
+          this.players[0].draw(ctx);
+        }
+        if (
+          this.tiles.flat().some((tile) => tile && tile.target) ||
+          this.players[0].target
+        ) {
           requestAnimationFrame(animationStep);
         } else {
           console.log("Animation finished");
@@ -544,6 +550,163 @@ class Grid {
 
   public getPlayer(index: number): Player {
     return this.players[index];
+  }
+
+  public async movePlayer(
+    ctx: CanvasRenderingContext2D,
+    tile: Tile,
+    player: Player
+  ) {
+    const { x: row, y: col } = this.screenToIso(player.pos, true);
+    const shortestPath = this.findShortestPath(this.tiles[row][col], tile);
+
+    const directionalSegments = [];
+    if (shortestPath) {
+      for (const path of shortestPath) {
+        const result = this.screenToIso(path.pos, true);
+        directionalSegments.push({ row: result.x, col: result.y });
+      }
+    } else {
+      console.error("No path found");
+    }
+
+    console.log("Path:", directionalSegments);
+    console.log(
+      "Directional segments:",
+      this.getDirectionalSegments(directionalSegments)
+    );
+
+    const segments = this.getDirectionalSegments(directionalSegments);
+    for (const segment of segments) {
+      const [row, col] = [segment.row, segment.col];
+      const { x: playerRow, y: playerCol } = this.screenToIso(player.pos, true);
+      const direction = this.getDirection(playerRow, playerCol, row, col);
+      console.log("Moving to:", row, col, "Direction:", direction);
+      this.tiles[playerRow][playerCol].setPlayer(null);
+      player.setTargetPos(this.isoToScreen(new Point(row, col)), direction);
+      await this.animate(ctx);
+    }
+    const { x: playerRow, y: playerCol } = this.screenToIso(player.pos, true);
+    this.tiles[playerRow][playerCol].setPlayer(player);
+    this.lowerTiles(ctx);
+  }
+
+  getDirection(
+    currentRow: number,
+    currentCol: number,
+    targetRow: number,
+    targetCol: number
+  ) {
+    if (targetRow > currentRow) {
+      return "EAST";
+    } else if (targetRow < currentRow) {
+      return "WEST";
+    } else if (targetCol > currentCol) {
+      return "SOUTH";
+    } else if (targetCol < currentCol) {
+      return "NORTH";
+    }
+    return "Same Position"; // if currentRow === targetRow and currentCol === targetCol
+  }
+
+  private getDirectionalSegments(
+    result: { row: number; col: number }[]
+  ): { row: number; col: number }[] {
+    if (result.length < 2) return result;
+
+    const filtered: { row: number; col: number }[] = [];
+    let start = result[0];
+
+    for (let i = 1; i < result.length; i++) {
+      const prev = result[i - 1];
+      const curr = result[i];
+
+      // Determine the direction between previous and current
+      const direction = {
+        row: curr.row - prev.row,
+        col: curr.col - prev.col,
+      };
+
+      // Check if the direction changes
+      if (
+        i === result.length - 1 ||
+        direction.row !== result[i + 1].row - curr.row ||
+        direction.col !== result[i + 1].col - curr.col
+      ) {
+        // filtered.push(start); // Start of the segment
+        filtered.push(curr); // End of the segment
+        start = curr;
+      }
+    }
+
+    return filtered;
+  }
+
+  private findShortestPath(startTile: Tile, targetTile: Tile): Tile[] | null {
+    const queue: { tile: Tile; path: Tile[] }[] = [
+      { tile: startTile, path: [startTile] },
+    ];
+    const visited = new Set<string>();
+
+    while (queue.length > 0) {
+      const { tile, path } = queue.shift()!;
+      const { pos, paths } = tile;
+      const { x: row, y: col } = this.screenToIso(pos, true);
+      const key = `${row},${col}`;
+
+      if (visited.has(key)) continue;
+      visited.add(key);
+
+      // Check if we reached the target
+      if (tile === targetTile) {
+        return path;
+      }
+
+      // Add neighbors to queue
+      if (
+        paths.includes("NORTH") &&
+        col > 1 &&
+        this.tiles[row][col - 1].paths.includes("SOUTH")
+      ) {
+        queue.push({
+          tile: this.tiles[row][col - 1],
+          path: [...path, this.tiles[row][col - 1]],
+        });
+      }
+      if (
+        paths.includes("SOUTH") &&
+        col < this.gridSize - 2 &&
+        this.tiles[row][col + 1].paths.includes("NORTH")
+      ) {
+        queue.push({
+          tile: this.tiles[row][col + 1],
+          path: [...path, this.tiles[row][col + 1]],
+        });
+      }
+      if (
+        paths.includes("EAST") &&
+        row < this.gridSize - 2 &&
+        this.tiles[row + 1][col].paths.includes("WEST")
+      ) {
+        queue.push({
+          tile: this.tiles[row + 1][col],
+          path: [...path, this.tiles[row + 1][col]],
+        });
+      }
+      if (
+        paths.includes("WEST") &&
+        row > 1 &&
+        this.tiles[row - 1][col].paths.includes("EAST")
+      ) {
+        queue.push({
+          tile: this.tiles[row - 1][col],
+          path: [...path, this.tiles[row - 1][col]],
+        });
+      }
+    }
+
+    // Return null if no path is found
+    return null;
   }
 }
 

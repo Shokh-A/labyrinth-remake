@@ -45,7 +45,7 @@ class Tile extends GameObject {
 
     // Reset the position, pos is just reference any changes made into it will reflect in the original object
     this.collectible?.draw(ctx, new Point(pos.x, pos.y));
-    this.player?.draw(ctx, new Point(pos.x, pos.y));
+    this.player?.draw(ctx);
   }
 
   private getTileColors() {
@@ -141,16 +141,10 @@ class Tile extends GameObject {
 
     if (this.target.direction === "UP" || this.target.direction === "DOWN") {
       this.pos.y += (1 / 2) * (this.target.direction === "DOWN" ? 1 : -1);
-      if (this.pos.y === this.target.pos.y) this.target = null;
-      return;
-    }
-
-    if (this.target.direction === "SOUTH") {
-      if (this.player) this.player.update();
+    } else if (this.target.direction === "SOUTH") {
       this.pos.x -= 1;
       this.pos.y += 1 / 2;
     } else if (this.target.direction === "NORTH") {
-      if (this.player) this.player.update();
       this.pos.x += 1;
       this.pos.y -= 1 / 2;
     } else if (this.target.direction === "EAST") {
@@ -160,18 +154,21 @@ class Tile extends GameObject {
       this.pos.x -= 1;
       this.pos.y -= 1 / 2;
     }
+
+    if (this.player) {
+      this.player.pos = this.pos.copy();
+    }
+
     if (
       this.target.direction === "DARKER" &&
       this.brightness < this.target.brightness
     ) {
       this.brightness = parseFloat((this.brightness + 0.05).toFixed(2));
-      console.log("Darker", this.brightness);
     } else if (
       this.target.direction === "BRIGHTER" &&
       this.brightness > this.target.brightness
     ) {
       this.brightness = parseFloat((this.brightness - 0.05).toFixed(2));
-      console.log("Brighter", this.brightness);
     }
 
     if (
@@ -184,8 +181,8 @@ class Tile extends GameObject {
 
   public setPos(pos: Point) {
     this.pos = pos;
-    if (this.collectible) this.collectible.pos = pos;
-    if (this.player) this.player.pos = pos;
+    if (this.collectible) this.collectible.pos = pos.copy();
+    if (this.player) this.player.pos = pos.copy();
   }
 
   public setTargetPos(pos: Point, direction: string, brightness: number = 0) {
@@ -206,7 +203,7 @@ class Tile extends GameObject {
 
   public setPlayer(player: Player | null) {
     this.player = player;
-    if (this.player) this.player.pos = this.pos;
+    if (this.player) this.player.pos = this.pos.copy();
   }
 }
 

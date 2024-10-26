@@ -4,7 +4,7 @@ import Point from "./Point";
 class Player extends GameObject {
   private frame: number = 0;
   private lastUpdateTime: number = 0;
-  private frameDuration: number = 100; // Time in milliseconds for each frame
+  private frameDurationInMs: number = 150;
 
   public target: {
     pos: Point;
@@ -26,7 +26,7 @@ class Player extends GameObject {
     if (!this.lastUpdateTime) this.lastUpdateTime = timestamp;
     const elapsedTime = timestamp - this.lastUpdateTime;
 
-    if (elapsedTime > this.frameDuration) {
+    if (elapsedTime > this.frameDurationInMs) {
       this.frame = (this.frame + 1) % 4;
       this.lastUpdateTime = timestamp;
     }
@@ -50,6 +50,10 @@ class Player extends GameObject {
       this.target = null;
       console.log("Target reached");
     }
+  }
+
+  setPos(pos: Point): void {
+    this.pos = pos.copy();
   }
 
   setTargetPos(pos: Point, direction: string) {
@@ -76,7 +80,7 @@ class Player extends GameObject {
       sWidth,
       sHeight,
       pos.x,
-      pos.y + this.offsetY,
+      pos.y,
       this.width,
       this.height
     );

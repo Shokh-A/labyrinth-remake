@@ -43,8 +43,7 @@ class Tile extends GameObject {
     this.drawFace(ctx, pos, colors.left, this.drawLeftFace.bind(this));
     this.drawFace(ctx, pos, colors.right, this.drawRightFace.bind(this));
 
-    // Reset the position, pos is just reference any changes made into it will reflect in the original object
-    this.collectible?.draw(ctx, new Point(pos.x, pos.y));
+    this.collectible?.draw(ctx);
     this.player?.draw(ctx);
   }
 
@@ -139,25 +138,35 @@ class Tile extends GameObject {
   public update() {
     if (!this.target) return;
 
-    if (this.target.direction === "UP" || this.target.direction === "DOWN") {
-      this.pos.y += (1 / 2) * (this.target.direction === "DOWN" ? 1 : -1);
-    } else if (this.target.direction === "SOUTH") {
-      this.pos.x -= 1;
-      this.pos.y += 1 / 2;
-    } else if (this.target.direction === "NORTH") {
-      this.pos.x += 1;
-      this.pos.y -= 1 / 2;
-    } else if (this.target.direction === "EAST") {
-      this.pos.x += 1;
-      this.pos.y += 1 / 2;
-    } else if (this.target.direction === "WEST") {
-      this.pos.x -= 1;
-      this.pos.y -= 1 / 2;
-    }
+    const animationMap: { [key: string]: () => void } = {
+      UP: () => {
+        this.pos.y -= 0.5;
+      },
+      DOWN: () => {
+        this.pos.y += 0.5;
+      },
+      SOUTH: () => {
+        this.pos.x -= 1;
+        this.pos.y += 0.5;
+      },
+      NORTH: () => {
+        this.pos.x += 1;
+        this.pos.y -= 0.5;
+      },
+      EAST: () => {
+        this.pos.x += 1;
+        this.pos.y += 0.5;
+      },
+      WEST: () => {
+        this.pos.x -= 1;
+        this.pos.y -= 0.5;
+      },
+    };
 
-    if (this.player) {
-      this.player.pos = this.pos.copy();
-    }
+    animationMap[this.target.direction]?.();
+
+    this.player?.setPos(this.pos);
+    this.collectible?.setPos(this.pos);
 
     if (
       this.target.direction === "DARKER" &&
@@ -180,9 +189,9 @@ class Tile extends GameObject {
   }
 
   public setPos(pos: Point) {
-    this.pos = pos;
-    if (this.collectible) this.collectible.pos = pos.copy();
-    if (this.player) this.player.pos = pos.copy();
+    this.pos = pos.copy();
+    if (this.collectible) this.collectible.setPos(pos);
+    if (this.player) this.player.setPos(pos);
   }
 
   public setTargetPos(pos: Point, direction: string, brightness: number = 0) {
@@ -196,14 +205,14 @@ class Tile extends GameObject {
     this.setTargetPos(pos, isConnected ? "UP" : "DOWN");
   }
 
-  public setCollectible(collectible: Collectible) {
+  public setCollectible(collectible: Collectible | null) {
     this.collectible = collectible;
-    this.collectible.pos = this.pos;
+    if (this.collectible) this.collectible.setPos(this.pos);
   }
 
   public setPlayer(player: Player | null) {
     this.player = player;
-    if (this.player) this.player.pos = this.pos.copy();
+    if (this.player) this.player.setPos(this.pos);
   }
 }
 

@@ -3,16 +3,16 @@ import Point from "./Point";
 
 class Collectible extends GameObject {
   constructor(
-    gridPos: Point,
+    pos: Point,
     width: number,
     height: number,
     private collectibleType: number,
     private img: HTMLImageElement
   ) {
-    super(gridPos, width, height);
+    super(pos, width, height);
   }
 
-  public draw(ctx: CanvasRenderingContext2D, pos: Point): void {
+  public draw(ctx: CanvasRenderingContext2D): void {
     const sRows = 8;
     const sCols = 15;
     const sWidth = 512;
@@ -21,6 +21,8 @@ class Collectible extends GameObject {
     const sy =
       sHeight *
       (sRows - 1 - (Math.floor(this.collectibleType / sCols) % sRows));
+
+    const pos = this.pos.copy();
     pos.x = pos.x - this.width / 2;
     pos.y = pos.y - 2;
 
@@ -31,10 +33,14 @@ class Collectible extends GameObject {
       sWidth,
       sHeight,
       pos.x,
-      pos.y + this.offsetY,
+      pos.y,
       this.width,
       this.height
     );
+  }
+
+  setPos(pos: Point): void {
+    this.pos = pos.copy();
   }
 }
 

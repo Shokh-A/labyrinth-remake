@@ -71,10 +71,13 @@ class GameEngine {
         this.grid.rotateTile(tile);
         this.draw(ctx);
       } else if (tile === this.grid.hoveredTile) {
-        this.grid.shiftAndRise(ctx, tile, this.curPlayerIndex);
-        this.gameState = "MOVING";
+        this.gameState = "IDLE";
+        this.grid.shiftAndRise(ctx, tile, this.curPlayerIndex).then(() => {
+          this.gameState = "MOVING";
+        });
       }
     } else if (this.gameState === "MOVING" && tile.isConnected) {
+      this.gameState = "IDLE";
       this.grid.movePlayer(ctx, tile, this.curPlayerIndex).then(() => {
         this.gameState = "SHIFTING";
       });

@@ -46,3 +46,33 @@ export const pathsMap: { [key: string]: Path } = {
   northEastWest: { imgSrc: northEastWest, paths: ["NORTH", "EAST", "WEST"] },
   southEastWest: { imgSrc: southEastWest, paths: ["SOUTH", "EAST", "WEST"] },
 };
+
+// This array contains paths to fill out the 7x7 grid with movable tiles
+export const movalePaths = getMovablePaths();
+
+function getMovablePaths(): Path[] {
+  const movablePathsTurn = [
+    ...createPaths(4, pathsMap.southEast),
+    ...createPaths(4, pathsMap.southWest),
+    ...createPaths(4, pathsMap.northWest),
+    ...createPaths(3, pathsMap.northEast),
+  ];
+
+  const movablePathsStraight = [
+    ...createPaths(6, pathsMap.eastWest),
+    ...createPaths(7, pathsMap.northSouth),
+  ];
+
+  const movablePathsDetour = [
+    ...createPaths(1, pathsMap.southEastWest),
+    ...createPaths(2, pathsMap.northEastWest),
+    ...createPaths(1, pathsMap.northSouthWest),
+    ...createPaths(2, pathsMap.northSouthEast),
+  ];
+
+  return [...movablePathsTurn, ...movablePathsStraight, ...movablePathsDetour];
+}
+
+function createPaths(count: number, path: Path) {
+  return new Array(count).fill(path);
+}

@@ -3,26 +3,31 @@ import playerImgSouth from "../assets/images/sprites/Front_S.png";
 import playerImgEast from "../assets/images/sprites/Front_E.png";
 import playerImgNorth from "../assets/images/sprites/Back_N.png";
 import playerImgWest from "../assets/images/sprites/Back_W.png";
-import { Path, pathsMap, preloadImages } from "../services/imageLoader";
+import {
+  movalePaths,
+  Path,
+  pathsMap,
+  preloadImages,
+} from "../services/imageLoader";
 import { Collectible, Player, Point, Tile } from "./index";
 import { DIRECTION } from "./GameObject";
 
 class Grid {
-  tileHeight: number;
+  private tileHeight: number;
   private movablePaths: Path[] = [];
-  images: Map<string, HTMLImageElement> = new Map();
+  private images: Map<string, HTMLImageElement> = new Map();
+  private tiles: Tile[][];
   hoveredTile: Tile | null = null;
   extraTile: Tile;
-  disabledTile: Tile | null = null;
-  tiles: Tile[][];
-  players: Player[] = [];
-  animationDirection: "NORTH" | "SOUTH" | "EAST" | "WEST" = "NORTH";
+  private disabledTile: Tile | null = null;
+  private players: Player[] = [];
+  private animationDirection: "NORTH" | "SOUTH" | "EAST" | "WEST" = "NORTH";
 
   constructor(
-    public worldWidth: number,
-    public gridSize: number,
-    public tileWidth: number,
-    public tileDepth: number
+    private worldWidth: number,
+    private gridSize: number,
+    private tileWidth: number,
+    private tileDepth: number
   ) {
     this.gridSize += 2; // Add two rows and cols as action tiles
     this.tileHeight = this.tileWidth / 2;
@@ -31,39 +36,14 @@ class Grid {
       .map(() => new Array(this.gridSize).fill(null));
     this.extraTile = new Tile(
       this.isoToScreen(new Point(4, -2)),
-      this.tileWidth,
+      tileWidth,
       this.tileHeight,
-      this.tileDepth,
+      tileDepth,
       new Image(),
       [],
       "MOVABLE"
     );
-
-    const movablePathsTurn = [
-      ...this.createPaths(4, pathsMap.southEast),
-      ...this.createPaths(4, pathsMap.southWest),
-      ...this.createPaths(4, pathsMap.northWest),
-      ...this.createPaths(3, pathsMap.northEast),
-    ];
-
-    const movablePathsStraight = [
-      ...this.createPaths(6, pathsMap.eastWest),
-      ...this.createPaths(7, pathsMap.northSouth),
-    ];
-
-    const movablePathsDetour = [
-      ...this.createPaths(1, pathsMap.southEastWest),
-      ...this.createPaths(2, pathsMap.northEastWest),
-      ...this.createPaths(1, pathsMap.northSouthWest),
-      ...this.createPaths(2, pathsMap.northSouthEast),
-    ];
-
-    // This array contains paths to fill out the 7x7 grid with movable tiles
-    this.movablePaths = [
-      ...movablePathsTurn,
-      ...movablePathsStraight,
-      ...movablePathsDetour,
-    ];
+    this.movablePaths = movalePaths;
   }
 
   async init(numOfPlayers: number, numOfCollectibles: number) {
@@ -123,14 +103,13 @@ class Grid {
       }
       uniquePositions.add(`${row},${col}`);
 
-      const collectible = new Collectible(
-        this.isoToScreen(new Point(row, col)),
-        40,
-        40,
-        i,
-        this.images.get(crystalsImg) as HTMLImageElement
+      this.tiles[row][col].setCollectible(
+        new Collectible(
+          this.isoToScreen(new Point(row, col)),
+          i,
+          this.images.get(crystalsImg) as HTMLImageElement
+        )
       );
-      this.tiles[row][col].setCollectible(collectible);
     }
   }
 
@@ -156,10 +135,6 @@ class Grid {
       this.tiles[spawnPoints[i].x][spawnPoints[i].y].setPlayer(player);
       this.players.push(player);
     }
-  }
-
-  private createPaths(count: number, path: Path) {
-    return new Array(count).fill(path);
   }
 
   private getTileType(row: number, col: number) {
@@ -392,26 +367,6 @@ class Grid {
     tile.paths = imgRotationMap[pathName].paths;
   }
 
-  public disableTileNextToPlayer(player: Player) {
-    const playerPos = player.pos;
-    if (playerPos.x % 2 !== 0 && playerPos.y % 2 !== 0) {
-      return;
-    }
-    let tile: Tile | null = null;
-    if (this.isEdge(playerPos.x - 1, playerPos.y)) {
-      tile = this.tiles[this.gridSize - 1][playerPos.y];
-    } else if (this.isEdge(playerPos.x + 1, playerPos.y)) {
-      tile = this.tiles[0][playerPos.y];
-    } else if (this.isEdge(playerPos.x, playerPos.y - 1)) {
-      tile = this.tiles[playerPos.x][this.gridSize - 1];
-    } else if (this.isEdge(playerPos.x, playerPos.y + 1)) {
-      tile = this.tiles[playerPos.x][0];
-    }
-    if (tile) {
-      tile.tileType = "DISABLED";
-    }
-  }
-
   public async shiftAndRise(
     ctx: CanvasRenderingContext2D,
     tile: Tile,
@@ -424,13 +379,16 @@ class Grid {
     else if (row === this.gridSize - 1) this.shiftCol(tile, DIRECTION.WEST);
 
     await this.animate(ctx).then(() => {
-      if (this.disabledTile) this.disabledTile.tileType = "ENABLED";
-      this.extraTile.tileType = "DISABLED";
-      this.disabledTile = this.extraTile;
+      this.disableAndEnableTile();
       this.swapWithExtraTile(this.hoveredTile!);
-      this.hoveredTile?.tileType === "DISABLED";
       this.riseConnectedTiles(ctx, playerIndex);
     });
+  }
+
+  private disableAndEnableTile() {
+    if (this.disabledTile) this.disabledTile.tileType = "ENABLED";
+    this.extraTile.tileType = "DISABLED";
+    this.disabledTile = this.extraTile;
   }
 
   private shiftRow(tile: Tile, direction: DIRECTION.SOUTH | DIRECTION.NORTH) {
@@ -439,8 +397,7 @@ class Grid {
     this.animationDirection = direction;
 
     const lastTileIndex = (this.gridSize - 1 - col) % this.gridSize;
-    const lastTile = tiles[row][lastTileIndex];
-    lastTile.setPos(this.isoToScreen(new Point(row, col)));
+    tiles[row][lastTileIndex].setPos(this.isoToScreen(new Point(row, col)));
     this.hoveredTile = tiles[row][Math.abs(lastTileIndex - 1)];
 
     if (direction === DIRECTION.SOUTH) {
@@ -698,20 +655,18 @@ class Grid {
       const prev = result[i - 1];
       const curr = result[i];
 
-      // Determine the direction between previous and current
       const direction = {
         row: curr.row - prev.row,
         col: curr.col - prev.col,
       };
 
-      // Check if the direction changes
       if (
         i === result.length - 1 ||
         direction.row !== result[i + 1].row - curr.row ||
         direction.col !== result[i + 1].col - curr.col
       ) {
-        // filtered.push(start); // Start of the segment
-        filtered.push(curr); // End of the segment
+        // filtered.push(start);
+        filtered.push(curr);
         start = curr;
       }
     }

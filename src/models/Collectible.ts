@@ -5,12 +5,10 @@ class Collectible extends GameObject {
   private spriteSheetCoords: { sx: number; sy: number };
   constructor(
     pos: Point,
-    width: number,
-    height: number,
     collectibleType: number,
     private img: HTMLImageElement
   ) {
-    super(pos, width, height);
+    super(pos, 40, 40);
     this.spriteSheetCoords = this.calculateSpriteSheetCoords(collectibleType);
   }
 

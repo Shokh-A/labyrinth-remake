@@ -1,11 +1,11 @@
 class Point {
   constructor(public x: number, public y: number) {}
 
-  public copy(): Point {
-    return new Point(this.x, this.y);
+  static from(point: Point): Point {
+    return new Point(point.x, point.y);
   }
 
-  public equals(point: Point): boolean {
+  equals(point: Point): boolean {
     return this.x === point.x && this.y === point.y;
   }
 }

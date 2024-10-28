@@ -2,45 +2,49 @@ import GameObject from "./GameObject";
 import Point from "./Point";
 
 class Collectible extends GameObject {
+  private spriteSheetCoords: { sx: number; sy: number };
   constructor(
     pos: Point,
     width: number,
     height: number,
-    private collectibleType: number,
+    collectibleType: number,
     private img: HTMLImageElement
   ) {
     super(pos, width, height);
+    this.spriteSheetCoords = this.calculateSpriteSheetCoords(collectibleType);
   }
 
-  public draw(ctx: CanvasRenderingContext2D): void {
+  private calculateSpriteSheetCoords(collectibleType: number) {
     const sRows = 8;
     const sCols = 15;
     const sWidth = 512;
     const sHeight = 512;
-    const sx = sWidth * (sCols - 1 - (this.collectibleType % sCols));
+    const sx = sWidth * (sCols - 1 - (collectibleType % sCols));
     const sy =
-      sHeight *
-      (sRows - 1 - (Math.floor(this.collectibleType / sCols) % sRows));
+      sHeight * (sRows - 1 - (Math.floor(collectibleType / sCols) % sRows));
 
-    const pos = this.pos.copy();
-    pos.x = pos.x - this.width / 2;
-    pos.y = pos.y - 2;
+    return { sx, sy };
+  }
 
+  update(): void {}
+
+  draw(ctx: CanvasRenderingContext2D): void {
+    const { sx, sy } = this.spriteSheetCoords;
+    const sWidth = 512;
+    const sHeight = 512;
+
+    const drawPos = new Point(this.pos.x - this.width / 2, this.pos.y - 2);
     ctx.drawImage(
       this.img,
       sx,
       sy,
       sWidth,
       sHeight,
-      pos.x,
-      pos.y,
+      drawPos.x,
+      drawPos.y,
       this.width,
       this.height
     );
-  }
-
-  setPos(pos: Point): void {
-    this.pos = pos.copy();
   }
 }
 

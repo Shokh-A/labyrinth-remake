@@ -5,6 +5,7 @@ import playerImgNorth from "../assets/images/sprites/Back_N.png";
 import playerImgWest from "../assets/images/sprites/Back_W.png";
 import { Path, pathsMap, preloadImages } from "../services/imageLoader";
 import { Collectible, Player, Point, Tile } from "./index";
+import { DIRECTION } from "./GameObject";
 
 class Grid {
   tileHeight: number;
@@ -281,17 +282,19 @@ class Grid {
     return { row: Math.floor(x), col: Math.floor(y) };
   }
 
-  public draw(ctx: CanvasRenderingContext2D) {
+  public render(ctx: CanvasRenderingContext2D, timestamp: number = 0) {
     ctx.clearRect(0, 0, this.worldWidth, this.worldWidth);
+    this.drawTiles(ctx);
+    this.drawPlayers(ctx, timestamp);
+  }
+
+  private drawTiles(ctx: CanvasRenderingContext2D) {
     if (
       this.animationDirection === "NORTH" ||
       this.animationDirection === "SOUTH"
     ) {
       this.tiles.flat().forEach((tile) => {
-        if (tile) {
-          tile.update();
-          tile.draw(ctx);
-        }
+        if (tile) tile.render(ctx);
       });
     } else if (
       this.animationDirection === "EAST" ||
@@ -300,10 +303,7 @@ class Grid {
       for (let col = 0; col < this.gridSize; col++) {
         for (let row = 0; row < this.gridSize; row++) {
           const tile = this.tiles[row][col];
-          if (tile) {
-            tile.update();
-            tile.draw(ctx);
-          }
+          if (tile) tile.render(ctx);
         }
       }
     }
@@ -311,17 +311,19 @@ class Grid {
     this.extraTile.draw(ctx);
   }
 
+  private drawPlayers(ctx: CanvasRenderingContext2D, timestamp: number) {
+    for (const player of this.players) {
+      player.render(ctx, timestamp);
+    }
+  }
+
   public animate(ctx: CanvasRenderingContext2D): Promise<void> {
     return new Promise((resolve) => {
       const animationStep = (timestamp: number) => {
-        this.draw(ctx);
-        if (this.players[0].target) {
-          this.players[0].update(timestamp);
-          this.players[0].draw(ctx);
-        }
+        this.render(ctx, timestamp);
         if (
-          this.tiles.flat().some((tile) => tile && tile.target) ||
-          this.players[0].target
+          this.tiles.flat().some((tile) => tile && tile.hasTarget()) ||
+          this.players.some((player) => player.hasTarget())
         ) {
           requestAnimationFrame(animationStep);
         } else {
@@ -410,12 +412,16 @@ class Grid {
     }
   }
 
-  public async shiftAndRise(ctx: CanvasRenderingContext2D, tile: Tile) {
+  public async shiftAndRise(
+    ctx: CanvasRenderingContext2D,
+    tile: Tile,
+    playerIndex: number
+  ) {
     const { row, col } = this.screenToIso(tile.pos);
-    if (col === 0) this.shiftRow(tile, "SOUTH");
-    else if (col === this.gridSize - 1) this.shiftRow(tile, "NORTH");
-    else if (row === 0) this.shiftCol(tile, "EAST");
-    else if (row === this.gridSize - 1) this.shiftCol(tile, "WEST");
+    if (col === 0) this.shiftRow(tile, DIRECTION.SOUTH);
+    else if (col === this.gridSize - 1) this.shiftRow(tile, DIRECTION.NORTH);
+    else if (row === 0) this.shiftCol(tile, DIRECTION.EAST);
+    else if (row === this.gridSize - 1) this.shiftCol(tile, DIRECTION.WEST);
 
     await this.animate(ctx).then(() => {
       if (this.disabledTile) this.disabledTile.tileType = "ENABLED";
@@ -423,11 +429,11 @@ class Grid {
       this.disabledTile = this.extraTile;
       this.swapWithExtraTile(this.hoveredTile!);
       this.hoveredTile?.tileType === "DISABLED";
-      this.riseConnectedTiles(ctx, this.players[0]);
+      this.riseConnectedTiles(ctx, playerIndex);
     });
   }
 
-  private shiftRow(tile: Tile, direction: "NORTH" | "SOUTH") {
+  private shiftRow(tile: Tile, direction: DIRECTION.SOUTH | DIRECTION.NORTH) {
     const tiles = this.tiles;
     const { row, col } = this.screenToIso(tile.pos);
     this.animationDirection = direction;
@@ -437,16 +443,16 @@ class Grid {
     lastTile.setPos(this.isoToScreen(new Point(row, col)));
     this.hoveredTile = tiles[row][Math.abs(lastTileIndex - 1)];
 
-    if (direction === "SOUTH") {
+    if (direction === DIRECTION.SOUTH) {
       for (let i = this.gridSize - 2; i >= 0; i--) {
         const newPos = new Point(row, (i % (this.gridSize - 1)) + 1);
-        tiles[row][i].setTargetPos(this.isoToScreen(newPos), "SOUTH");
+        tiles[row][i].setTargetPos(this.isoToScreen(newPos), direction);
         tiles[row][i] = tiles[row][(this.gridSize - 1 + i) % this.gridSize];
       }
-    } else if (direction === "NORTH") {
+    } else if (direction === DIRECTION.NORTH) {
       for (let i = 1; i < this.gridSize; i++) {
         const newPos = new Point(row, (i - 1) % (this.gridSize - 1));
-        tiles[row][i].setTargetPos(this.isoToScreen(newPos), "NORTH");
+        tiles[row][i].setTargetPos(this.isoToScreen(newPos), direction);
         tiles[row][i] = tiles[row][(i + 1) % this.gridSize];
       }
     }
@@ -460,7 +466,7 @@ class Grid {
     }
   }
 
-  private shiftCol(tile: Tile, direction: "EAST" | "WEST") {
+  private shiftCol(tile: Tile, direction: DIRECTION.EAST | DIRECTION.WEST) {
     const tiles = this.tiles;
     const { row, col } = this.screenToIso(tile.pos);
     this.animationDirection = direction;
@@ -470,16 +476,16 @@ class Grid {
     lastTile.setPos(this.isoToScreen(new Point(row, col)));
     this.hoveredTile = tiles[Math.abs(lastTileIndex - 1)][col];
 
-    if (direction === "EAST") {
+    if (direction === DIRECTION.EAST) {
       for (let i = this.gridSize - 2; i >= 0; i--) {
         const newPos = new Point((i % (this.gridSize - 1)) + 1, col);
-        tiles[i][col].setTargetPos(this.isoToScreen(newPos), "EAST");
+        tiles[i][col].setTargetPos(this.isoToScreen(newPos), direction);
         tiles[i][col] = tiles[(this.gridSize - 1 + i) % this.gridSize][col];
       }
-    } else if (direction === "WEST") {
+    } else if (direction === DIRECTION.WEST) {
       for (let i = 1; i < this.gridSize; i++) {
         const newPos = new Point((i - 1) % (this.gridSize - 1), col);
-        tiles[i][col].setTargetPos(this.isoToScreen(newPos), "WEST");
+        tiles[i][col].setTargetPos(this.isoToScreen(newPos), direction);
         tiles[i][col] = tiles[(i + 1) % this.gridSize][col];
       }
     }
@@ -495,8 +501,9 @@ class Grid {
 
   public async riseConnectedTiles(
     ctx: CanvasRenderingContext2D,
-    player: Player
+    playerIndex: number
   ) {
+    const player = this.getPlayer(playerIndex);
     const { row, col } = this.screenToIso(player.pos);
     this.riseTiles(this.tiles[row][col]);
     this.setColorAnimation();
@@ -506,7 +513,7 @@ class Grid {
   private setColorAnimation() {
     this.tiles.flat().forEach((tile) => {
       if (tile && !tile.isConnected) {
-        tile.setTargetPos(tile.pos, "DARKER", 0.7);
+        tile.setTargetPos(tile.pos, DIRECTION.DARKER, 0.7);
       }
     });
   }
@@ -557,20 +564,21 @@ class Grid {
   public async lowerTiles(ctx: CanvasRenderingContext2D) {
     this.tiles.flat().forEach((tile) => {
       if (tile && tile.isConnected) tile.setIsConnected(false);
-      else if (tile) tile.setTargetPos(tile.pos, "BRIGHTER", 0);
+      else if (tile) tile.setTargetPos(tile.pos, DIRECTION.BRIGHTER, 0);
     });
     await this.animate(ctx);
   }
 
-  public getPlayer(index: number): Player {
+  private getPlayer(index: number): Player {
     return this.players[index];
   }
 
   public async movePlayer(
     ctx: CanvasRenderingContext2D,
-    player: Player,
-    targetTile: Tile
+    targetTile: Tile,
+    playerIndex: number
   ) {
+    const player = this.getPlayer(playerIndex);
     const startPos = this.screenToIso(player.pos, true);
     const shortestPath = this.findShortestPath(
       this.tiles[startPos.row][startPos.col],
@@ -671,11 +679,11 @@ class Grid {
     curPos: { row: number; col: number },
     targetPos: { row: number; col: number }
   ) {
-    if (targetPos.row > curPos.row) return "EAST";
-    if (targetPos.row < curPos.row) return "WEST";
-    if (targetPos.col > curPos.col) return "SOUTH";
-    if (targetPos.col < curPos.col) return "NORTH";
-    return "SAME";
+    if (targetPos.row > curPos.row) return DIRECTION.EAST;
+    if (targetPos.row < curPos.row) return DIRECTION.WEST;
+    if (targetPos.col > curPos.col) return DIRECTION.SOUTH;
+    if (targetPos.col < curPos.col) return DIRECTION.NORTH;
+    return DIRECTION.NONE;
   }
 
   private getDirectionalSegments(

@@ -1,11 +1,20 @@
 import Collectible from "./Collectible";
-import GameObject from "./GameObject";
+import GameObject, { DIRECTION } from "./GameObject";
 import Player from "./Player";
 import Point from "./Point";
 
 type TileType = "FIXED" | "MOVABLE" | "ENABLED" | "DISABLED";
 
+interface TileTarget {
+  pos: Point;
+  direction: DIRECTION;
+  brightness: number;
+}
+
 class Tile extends GameObject {
+  protected target: TileTarget | null = null;
+  private brightness: number = 0;
+
   constructor(
     pos: Point,
     width: number,
@@ -16,90 +25,63 @@ class Tile extends GameObject {
     public tileType: TileType,
     public isConnected: boolean = false,
     public collectible: Collectible | null = null,
-    public player: Player | null = null,
-
-    private brightness: number = 0,
-
-    public target: {
-      pos: Point;
-      direction: string;
-      brightness: number;
-    } | null = null
+    public player: Player | null = null
   ) {
     super(pos, width, height);
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-    const pos = this.pos.copy();
+    const pos = Point.from(this.pos);
 
     const colors = this.getTileColors();
-    const isFilled =
-      this.tileType === "ENABLED" ||
-      this.tileType === "DISABLED" ||
-      this.tileType === "FIXED" ||
-      this.tileType === "MOVABLE";
 
-    this.drawFace(ctx, pos, colors.top, this.drawTopFace.bind(this), isFilled);
+    this.drawFace(ctx, pos, colors.top, this.drawTopFace.bind(this));
     this.drawFace(ctx, pos, colors.left, this.drawLeftFace.bind(this));
     this.drawFace(ctx, pos, colors.right, this.drawRightFace.bind(this));
 
     this.collectible?.draw(ctx);
-    this.player?.draw(ctx);
   }
 
   private getTileColors() {
+    var topColor = "rgba(144, 238, 144, 0.3)";
+    var leftColor = "rgba(144, 238, 144, 0.3)";
+    var rightColor = "rgba(144, 238, 144, 0.3)";
     switch (this.tileType) {
       case "FIXED":
-        return {
-          top:
-            this.brightness > 0 || this.isConnected
-              ? `rgba(144, 238, 144, ${this.brightness})`
-              : "rgba(204, 128, 0, 0.3)",
-          left: "rgba(144, 238, 144, 0.3)",
-          right: "rgba(144, 238, 144, 0.3)",
-        };
-      case "ENABLED":
-        return {
-          top: "rgba(144, 238, 144, 0.3)",
-          left: "rgba(144, 238, 144, 0.3)",
-          right: "rgba(144, 238, 144, 0.3)",
-        };
+        topColor =
+          this.isConnected || this.brightness > 0
+            ? `rgba(144, 238, 144, ${this.brightness})`
+            : "rgba(204, 128, 0, 0.3)";
+        break;
       case "DISABLED":
-        return {
-          top: "rgba(255, 99, 132, 0.3)",
-          left: "rgba(220, 20, 60, 0.3)",
-          right: "rgba(139, 0, 0, 0.3)",
-        };
+        topColor = "rgba(255, 99, 132, 0.3)";
+        leftColor = "rgba(220, 20, 60, 0.3)";
+        rightColor = "rgba(139, 0, 0, 0.3)";
+        break;
       case "MOVABLE":
-        return {
-          top: `rgba(144, 238, 144, ${this.brightness})`,
-          left: "#4d7224",
-          right: "#2f4b13",
-        };
-      default:
-        return {
-          top: "rgba(144, 238, 144, 0.7)",
-          left: "#4d7224",
-          right: "#2f4b13",
-        };
+        topColor = `rgba(144, 238, 144, ${this.brightness})`;
+        break;
     }
+
+    return {
+      top: topColor,
+      left: leftColor,
+      right: rightColor,
+    };
   }
 
   private drawFace(
     ctx: CanvasRenderingContext2D,
     pos: Point,
     color: string,
-    drawMethod: (ctx: CanvasRenderingContext2D, pos: Point) => void,
-    isFilled: boolean = true
+    drawMethod: (ctx: CanvasRenderingContext2D, pos: Point) => void
   ) {
     ctx.beginPath();
     drawMethod(ctx, pos);
     ctx.closePath();
 
-    if (isFilled) {
-      ctx.fillStyle = color;
-      ctx.fill();
-    }
+    ctx.fillStyle = color;
+    ctx.fill();
 
     ctx.strokeStyle = "#000";
     ctx.stroke();
@@ -135,50 +117,11 @@ class Tile extends GameObject {
     ctx.lineTo(pos.x + this.width / 2, pos.y + this.height / 2 + this.depth);
   }
 
-  public update() {
+  update() {
     if (!this.target) return;
 
-    const animationMap: { [key: string]: () => void } = {
-      UP: () => {
-        this.pos.y -= 0.5;
-      },
-      DOWN: () => {
-        this.pos.y += 0.5;
-      },
-      SOUTH: () => {
-        this.pos.x -= 1;
-        this.pos.y += 0.5;
-      },
-      NORTH: () => {
-        this.pos.x += 1;
-        this.pos.y -= 0.5;
-      },
-      EAST: () => {
-        this.pos.x += 1;
-        this.pos.y += 0.5;
-      },
-      WEST: () => {
-        this.pos.x -= 1;
-        this.pos.y -= 0.5;
-      },
-    };
-
-    animationMap[this.target.direction]?.();
-
-    this.player?.setPos(this.pos);
-    this.collectible?.setPos(this.pos);
-
-    if (
-      this.target.direction === "DARKER" &&
-      this.brightness < this.target.brightness
-    ) {
-      this.brightness = parseFloat((this.brightness + 0.05).toFixed(2));
-    } else if (
-      this.target.direction === "BRIGHTER" &&
-      this.brightness > this.target.brightness
-    ) {
-      this.brightness = parseFloat((this.brightness - 0.05).toFixed(2));
-    }
+    this.updatePosition();
+    this.updateBrightness();
 
     if (
       this.pos.equals(this.target.pos) &&
@@ -188,29 +131,79 @@ class Tile extends GameObject {
     }
   }
 
-  public setPos(pos: Point) {
-    this.pos = pos.copy();
+  private updatePosition() {
+    const moveOffset = 1;
+
+    switch (this.target!.direction) {
+      case "UP":
+        this.pos.y -= moveOffset / 2;
+        break;
+      case "DOWN":
+        this.pos.y += moveOffset / 2;
+        break;
+      case "SOUTH":
+        this.pos.x -= moveOffset;
+        this.pos.y += moveOffset / 2;
+        break;
+      case "NORTH":
+        this.pos.x += moveOffset;
+        this.pos.y -= moveOffset / 2;
+        break;
+      case "EAST":
+        this.pos.x += moveOffset;
+        this.pos.y += moveOffset / 2;
+        break;
+      case "WEST":
+        this.pos.x -= moveOffset;
+        this.pos.y -= moveOffset / 2;
+        break;
+    }
+
+    this.player?.setPos(this.pos);
+    this.collectible?.setPos(this.pos);
+  }
+
+  private updateBrightness() {
+    if (
+      this.target!.direction === "DARKER" &&
+      this.brightness < this.target!.brightness
+    ) {
+      this.brightness = parseFloat((this.brightness + 0.05).toFixed(2));
+    } else if (
+      this.target!.direction === "BRIGHTER" &&
+      this.brightness > this.target!.brightness
+    ) {
+      this.brightness = parseFloat((this.brightness - 0.05).toFixed(2));
+    }
+  }
+
+  setPos(pos: Point) {
+    this.pos = Point.from(pos);
     if (this.collectible) this.collectible.setPos(pos);
     if (this.player) this.player.setPos(pos);
   }
 
-  public setTargetPos(pos: Point, direction: string, brightness: number = 0) {
+  setTargetPos(pos: Point, direction: DIRECTION, brightness: number = 0) {
     this.target = { pos, direction, brightness };
   }
 
-  public setIsConnected(isConnected: boolean) {
-    this.isConnected = isConnected;
-    const pos = this.pos.copy();
-    pos.y += isConnected ? -10 : 10;
-    this.setTargetPos(pos, isConnected ? "UP" : "DOWN");
+  hasTarget() {
+    return this.target !== null;
   }
 
-  public setCollectible(collectible: Collectible | null) {
+  setIsConnected(isConnected: boolean) {
+    this.isConnected = isConnected;
+    const pos = Point.from(this.pos);
+    pos.y += isConnected ? -10 : 10;
+    this.setTargetPos(pos, isConnected ? DIRECTION.UP : DIRECTION.DOWN);
+  }
+
+  setCollectible(collectible: Collectible | null) {
     this.collectible = collectible;
     if (this.collectible) this.collectible.setPos(this.pos);
   }
 
-  public setPlayer(player: Player | null) {
+  setPlayer(player: Player | null) {
     this.player = player;
     if (this.player) this.player.setPos(this.pos);
   }

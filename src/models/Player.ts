@@ -1,16 +1,11 @@
-import GameObject from "./GameObject";
+import GameObject, { DIRECTION } from "./GameObject";
 import Point from "./Point";
 
 class Player extends GameObject {
   private frame: number = 0;
-  private direction: string = "EAST";
+  private direction: DIRECTION = DIRECTION.EAST;
   private lastUpdateTime: number = 0;
   private frameDurationInMs: number = 150;
-
-  public target: {
-    pos: Point;
-    direction: string;
-  } | null = null;
 
   constructor(
     pos: Point,
@@ -21,33 +16,25 @@ class Player extends GameObject {
     super(pos, 60, 60);
   }
 
+  setTargetPos(pos: Point, direction: DIRECTION) {
+    const targetPos = new Point(pos.x, pos.y - 10);
+    this.target = { pos: targetPos, direction };
+  }
+
+  hasTarget() {
+    return this.target !== null;
+  }
+
+  resetDirectionAndFrame() {
+    this.direction = DIRECTION.EAST;
+    this.frame = 0;
+  }
+
   update(timestamp: number) {
     if (!this.target) return;
 
-    if (!this.lastUpdateTime) this.lastUpdateTime = timestamp;
-    const elapsedTime = timestamp - this.lastUpdateTime;
-
-    if (elapsedTime > this.frameDurationInMs) {
-      this.frame = (this.frame + 1) % 4;
-      this.lastUpdateTime = timestamp;
-    }
-
-    this.direction =
-      this.target.direction !== "SAME" ? this.target.direction : this.direction;
-
-    if (this.target.direction === "SOUTH") {
-      this.pos.x -= 1;
-      this.pos.y += 1 / 2;
-    } else if (this.target.direction === "WEST") {
-      this.pos.x -= 1;
-      this.pos.y -= 1 / 2;
-    } else if (this.target.direction === "EAST") {
-      this.pos.x += 1;
-      this.pos.y += 1 / 2;
-    } else if (this.target.direction === "NORTH") {
-      this.pos.x += 1;
-      this.pos.y -= 1 / 2;
-    }
+    this.updateFrame(timestamp);
+    this.updatePosition();
 
     if (this.pos.equals(this.target.pos)) {
       this.frame = 0;
@@ -55,18 +42,42 @@ class Player extends GameObject {
     }
   }
 
-  setPos(pos: Point): void {
-    this.pos = pos.copy();
+  private updateFrame(timestamp: number) {
+    if (!this.lastUpdateTime) this.lastUpdateTime = timestamp;
+    const elapsedTime = timestamp - this.lastUpdateTime;
+
+    if (elapsedTime > this.frameDurationInMs) {
+      this.frame = (this.frame + 1) % 4;
+      this.lastUpdateTime = timestamp;
+    }
   }
 
-  setTargetPos(pos: Point, direction: string) {
-    pos.y -= 10;
-    this.target = { pos, direction };
-  }
+  private updatePosition() {
+    this.direction =
+      this.target!.direction !== DIRECTION.NONE
+        ? this.target!.direction
+        : this.direction;
 
-  resetDirectionAndFrame() {
-    this.direction = "EAST";
-    this.frame = 0;
+    const moveOffset = 1;
+
+    switch (this.target!.direction) {
+      case "SOUTH":
+        this.pos.x -= moveOffset;
+        this.pos.y += moveOffset / 2;
+        break;
+      case "WEST":
+        this.pos.x -= moveOffset;
+        this.pos.y -= moveOffset / 2;
+        break;
+      case "EAST":
+        this.pos.x += moveOffset;
+        this.pos.y += moveOffset / 2;
+        break;
+      case "NORTH":
+        this.pos.x += moveOffset;
+        this.pos.y -= moveOffset / 2;
+        break;
+    }
   }
 
   draw(ctx: CanvasRenderingContext2D) {
@@ -74,9 +85,11 @@ class Player extends GameObject {
     const sy = 0;
     const sWidth = 350;
     const sHeight = 350;
-    const pos = this.pos.copy();
-    pos.x = pos.x - this.width / 2;
-    pos.y = pos.y - this.height / 2;
+
+    const drawPos = new Point(
+      this.pos.x - this.width / 2,
+      this.pos.y - this.height / 2
+    );
 
     const img = this.imgs[this.direction];
 
@@ -86,8 +99,8 @@ class Player extends GameObject {
       sy,
       sWidth,
       sHeight,
-      pos.x,
-      pos.y,
+      drawPos.x,
+      drawPos.y,
       this.width,
       this.height
     );

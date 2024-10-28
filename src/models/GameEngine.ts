@@ -1,7 +1,8 @@
-import { Grid, Player, Point, Tile } from "./index";
+import { Grid, Point } from "./index";
 
 class GameEngine {
   private readonly grid: Grid;
+  private numOfPlayers: number = 0;
   private curPlayerIndex: number = 0;
   private gameState: "IDLE" | "SHIFTING" | "MOVING" = "IDLE";
 
@@ -15,6 +16,7 @@ class GameEngine {
     numOfCollectibles: number
   ): Promise<void> {
     try {
+      this.numOfPlayers = numOfPlayers;
       await this.grid.init(numOfPlayers, numOfCollectibles);
       this.gameState = "SHIFTING";
       this.draw(ctx);
@@ -25,7 +27,11 @@ class GameEngine {
 
   private draw(ctx: CanvasRenderingContext2D): void {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    this.grid.draw(ctx);
+    this.grid.render(ctx);
+  }
+
+  private getNextPlayerIndex(): number {
+    return (this.curPlayerIndex + 1) % this.numOfPlayers;
   }
 
   public handleMouseHover(
@@ -38,10 +44,11 @@ class GameEngine {
     const tile = this.grid.getTile(new Point(screenX, screenY));
     if (tile !== this.grid.hoveredTile && this.grid.hoveredTile) {
       this.grid.swapWithExtraTile(this.grid.hoveredTile);
+      this.draw(ctx);
     } else if (tile && tile.tileType === "ENABLED" && !this.grid.hoveredTile) {
       this.grid.swapWithExtraTile(tile);
+      this.draw(ctx);
     }
-    this.draw(ctx);
   }
 
   public handleMouseClick(
@@ -59,21 +66,20 @@ class GameEngine {
       this.grid.screenToIso(tile.pos, tile.isConnected)
     );
 
-    const curPlayer = this.grid.getPlayer(this.curPlayerIndex);
     if (this.gameState === "SHIFTING") {
       if (tile === this.grid.extraTile) {
         this.grid.rotateTile(tile);
         this.draw(ctx);
       } else if (tile === this.grid.hoveredTile) {
-        this.grid.shiftAndRise(ctx, tile);
+        this.grid.shiftAndRise(ctx, tile, this.curPlayerIndex);
         this.gameState = "MOVING";
       }
     } else if (this.gameState === "MOVING" && tile.isConnected) {
-      this.grid.movePlayer(ctx, curPlayer, tile);
-      // this.grid.lowerTiles(ctx);
+      this.grid.movePlayer(ctx, tile, this.curPlayerIndex).then(() => {
+        this.gameState = "SHIFTING";
+      });
 
-      // this.curPlayerIndex = (this.curPlayerIndex + 1) % 2;
-      this.gameState = "SHIFTING";
+      this.curPlayerIndex = this.getNextPlayerIndex();
     }
   }
 }

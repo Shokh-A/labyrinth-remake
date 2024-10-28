@@ -12,7 +12,7 @@ class Grid {
   images: Map<string, HTMLImageElement> = new Map();
   hoveredTile: Tile | null = null;
   extraTile: Tile;
-  disabledTiles: Tile[] = [];
+  disabledTile: Tile | null = null;
   tiles: Tile[][];
   players: Player[] = [];
   animationDirection: "NORTH" | "SOUTH" | "EAST" | "WEST" = "NORTH";
@@ -271,14 +271,14 @@ class Grid {
   public screenToIso(
     screenPos: Point,
     hasOffset: boolean = false
-  ): { x: number; y: number } {
+  ): { row: number; col: number } {
     const screenY = screenPos.y + (hasOffset ? 10 : 0);
     const centeredX = screenPos.x - this.worldWidth / 2;
     const x =
       (centeredX / (this.tileWidth / 2) + screenY / (this.tileHeight / 2)) / 2;
     const y =
       (screenY / (this.tileHeight / 2) - centeredX / (this.tileWidth / 2)) / 2;
-    return { x: Math.floor(x), y: Math.floor(y) };
+    return { row: Math.floor(x), col: Math.floor(y) };
   }
 
   public draw(ctx: CanvasRenderingContext2D) {
@@ -335,12 +335,14 @@ class Grid {
   }
 
   public getTile(screenPos: Point, hasOffset: boolean = false): Tile | null {
-    const { x, y } = this.screenToIso(screenPos, hasOffset);
-    if (this.isWithinGrid(x, y)) {
-      return this.tiles[x][y];
+    const { row, col } = this.screenToIso(screenPos, hasOffset);
+    if (this.isWithinGrid(row, col)) {
+      return this.tiles[row][col];
     } else {
-      const { x: extraRow, y: extraCol } = this.screenToIso(this.extraTile.pos);
-      if (extraRow === x && extraCol === y) {
+      const { row: extraRow, col: extraCol } = this.screenToIso(
+        this.extraTile.pos
+      );
+      if (extraRow === row && extraCol === col) {
         return this.extraTile;
       }
     }
@@ -348,7 +350,7 @@ class Grid {
   }
 
   public swapWithExtraTile(tile: Tile) {
-    const { x: row, y: col } = this.screenToIso(tile.pos);
+    const { row, col } = this.screenToIso(tile.pos);
     const tilePos = tile.pos;
     const extraTilePos = this.extraTile.pos;
 
@@ -388,10 +390,6 @@ class Grid {
     tile.paths = imgRotationMap[pathName].paths;
   }
 
-  public enableDisabledTiles() {
-    this.disabledTiles.forEach((tile) => (tile.tileType = "ENABLED"));
-  }
-
   public disableTileNextToPlayer(player: Player) {
     const playerPos = player.pos;
     if (playerPos.x % 2 !== 0 && playerPos.y % 2 !== 0) {
@@ -409,32 +407,35 @@ class Grid {
     }
     if (tile) {
       tile.tileType = "DISABLED";
-      this.disabledTiles.push(tile);
     }
   }
 
   public async shiftAndRise(ctx: CanvasRenderingContext2D, tile: Tile) {
-    this.enableDisabledTiles();
-    const { x: row, y: col } = this.screenToIso(tile.pos);
+    const { row, col } = this.screenToIso(tile.pos);
     if (col === 0) this.shiftRow(tile, "SOUTH");
     else if (col === this.gridSize - 1) this.shiftRow(tile, "NORTH");
     else if (row === 0) this.shiftCol(tile, "EAST");
     else if (row === this.gridSize - 1) this.shiftCol(tile, "WEST");
 
     await this.animate(ctx).then(() => {
+      if (this.disabledTile) this.disabledTile.tileType = "ENABLED";
+      this.extraTile.tileType = "DISABLED";
+      this.disabledTile = this.extraTile;
       this.swapWithExtraTile(this.hoveredTile!);
+      this.hoveredTile?.tileType === "DISABLED";
       this.riseConnectedTiles(ctx, this.players[0]);
     });
   }
 
   private shiftRow(tile: Tile, direction: "NORTH" | "SOUTH") {
     const tiles = this.tiles;
-    const { x: row, y: col } = this.screenToIso(tile.pos);
+    const { row, col } = this.screenToIso(tile.pos);
     this.animationDirection = direction;
 
-    const lastTile = tiles[row][(this.gridSize - 1 - col) % this.gridSize];
+    const lastTileIndex = (this.gridSize - 1 - col) % this.gridSize;
+    const lastTile = tiles[row][lastTileIndex];
     lastTile.setPos(this.isoToScreen(new Point(row, col)));
-    this.hoveredTile = tiles[row][col === 0 ? this.gridSize - 2 : 1];
+    this.hoveredTile = tiles[row][Math.abs(lastTileIndex - 1)];
 
     if (direction === "SOUTH") {
       for (let i = this.gridSize - 2; i >= 0; i--) {
@@ -450,17 +451,24 @@ class Grid {
       }
     }
 
-    tiles[row][(this.gridSize - 1 - col) % this.gridSize] = this.hoveredTile!;
+    tiles[row][lastTileIndex] = this.hoveredTile!;
+    if (this.tiles[row][lastTileIndex].player) {
+      this.tiles[row][Math.abs(lastTileIndex - 7)].setPlayer(
+        this.tiles[row][lastTileIndex].player
+      );
+      this.tiles[row][lastTileIndex].setPlayer(null);
+    }
   }
 
   private shiftCol(tile: Tile, direction: "EAST" | "WEST") {
     const tiles = this.tiles;
-    const { x: row, y: col } = this.screenToIso(tile.pos);
+    const { row, col } = this.screenToIso(tile.pos);
     this.animationDirection = direction;
 
-    const lastTile = tiles[(this.gridSize - 1 - row) % this.gridSize][col];
+    const lastTileIndex = (this.gridSize - 1 - row) % this.gridSize;
+    const lastTile = tiles[lastTileIndex][col];
     lastTile.setPos(this.isoToScreen(new Point(row, col)));
-    this.hoveredTile = tiles[row === 0 ? this.gridSize - 2 : 1][col];
+    this.hoveredTile = tiles[Math.abs(lastTileIndex - 1)][col];
 
     if (direction === "EAST") {
       for (let i = this.gridSize - 2; i >= 0; i--) {
@@ -476,14 +484,20 @@ class Grid {
       }
     }
 
-    tiles[(this.gridSize - 1 - row) % this.gridSize][col] = this.hoveredTile;
+    tiles[lastTileIndex][col] = this.hoveredTile;
+    if (this.tiles[lastTileIndex][col].player) {
+      this.tiles[Math.abs(lastTileIndex - 7)][col].setPlayer(
+        this.tiles[lastTileIndex][col].player
+      );
+      this.tiles[lastTileIndex][col].setPlayer(null);
+    }
   }
 
   public async riseConnectedTiles(
     ctx: CanvasRenderingContext2D,
     player: Player
   ) {
-    const { x: row, y: col } = this.screenToIso(player.pos);
+    const { row, col } = this.screenToIso(player.pos);
     this.riseTiles(this.tiles[row][col]);
     this.setColorAnimation();
     await this.animate(ctx);
@@ -499,7 +513,7 @@ class Grid {
 
   private riseTiles(tile: Tile, visited: Set<string> = new Set()) {
     const { pos, paths } = tile;
-    const { x: row, y: col } = this.screenToIso(pos);
+    const { row, col } = this.screenToIso(pos);
 
     const key = `${row},${col}`;
     if (visited.has(key)) return;
@@ -554,92 +568,39 @@ class Grid {
 
   public async movePlayer(
     ctx: CanvasRenderingContext2D,
-    tile: Tile,
-    player: Player
+    player: Player,
+    targetTile: Tile
   ) {
-    const { x: row, y: col } = this.screenToIso(player.pos, true);
-    const shortestPath = this.findShortestPath(this.tiles[row][col], tile);
-
-    const directionalSegments = [];
-    if (shortestPath) {
-      for (const path of shortestPath) {
-        const result = this.screenToIso(path.pos, true);
-        directionalSegments.push({ row: result.x, col: result.y });
-      }
-    } else {
-      console.error("No path found");
-    }
-
-    console.log("Path:", directionalSegments);
-    console.log(
-      "Directional segments:",
-      this.getDirectionalSegments(directionalSegments)
+    const startPos = this.screenToIso(player.pos, true);
+    const shortestPath = this.findShortestPath(
+      this.tiles[startPos.row][startPos.col],
+      targetTile
     );
 
-    const segments = this.getDirectionalSegments(directionalSegments);
-    for (const segment of segments) {
-      const [row, col] = [segment.row, segment.col];
-      const { x: playerRow, y: playerCol } = this.screenToIso(player.pos, true);
-      const direction = this.getDirection(playerRow, playerCol, row, col);
-      console.log("Moving to:", row, col, "Direction:", direction);
-      this.tiles[playerRow][playerCol].setPlayer(null);
-      player.setTargetPos(this.isoToScreen(new Point(row, col)), direction);
+    if (!shortestPath) {
+      console.error("No path found");
+      return;
+    }
+
+    const pathCoordinates = shortestPath.map((tile) =>
+      this.screenToIso(tile.pos, true)
+    );
+    const directionalSegments = this.getDirectionalSegments(pathCoordinates);
+
+    for (const segment of directionalSegments) {
+      const playerPos = this.screenToIso(player.pos, true);
+      this.tiles[playerPos.row][playerPos.col].setPlayer(null);
+      player.setTargetPos(
+        this.isoToScreen(new Point(segment.row, segment.col)),
+        this.getTargetDirection(playerPos, segment)
+      );
       await this.animate(ctx);
     }
-    const { x: playerRow, y: playerCol } = this.screenToIso(player.pos, true);
-    this.tiles[playerRow][playerCol].setPlayer(player);
+
+    player.resetDirectionAndFrame();
+    const finalPos = this.screenToIso(player.pos, true);
+    this.tiles[finalPos.row][finalPos.col].setPlayer(player);
     this.lowerTiles(ctx);
-  }
-
-  getDirection(
-    currentRow: number,
-    currentCol: number,
-    targetRow: number,
-    targetCol: number
-  ) {
-    if (targetRow > currentRow) {
-      return "EAST";
-    } else if (targetRow < currentRow) {
-      return "WEST";
-    } else if (targetCol > currentCol) {
-      return "SOUTH";
-    } else if (targetCol < currentCol) {
-      return "NORTH";
-    }
-    return "Same Position"; // if currentRow === targetRow and currentCol === targetCol
-  }
-
-  private getDirectionalSegments(
-    result: { row: number; col: number }[]
-  ): { row: number; col: number }[] {
-    if (result.length < 2) return result;
-
-    const filtered: { row: number; col: number }[] = [];
-    let start = result[0];
-
-    for (let i = 1; i < result.length; i++) {
-      const prev = result[i - 1];
-      const curr = result[i];
-
-      // Determine the direction between previous and current
-      const direction = {
-        row: curr.row - prev.row,
-        col: curr.col - prev.col,
-      };
-
-      // Check if the direction changes
-      if (
-        i === result.length - 1 ||
-        direction.row !== result[i + 1].row - curr.row ||
-        direction.col !== result[i + 1].col - curr.col
-      ) {
-        // filtered.push(start); // Start of the segment
-        filtered.push(curr); // End of the segment
-        start = curr;
-      }
-    }
-
-    return filtered;
   }
 
   private findShortestPath(startTile: Tile, targetTile: Tile): Tile[] | null {
@@ -651,18 +612,16 @@ class Grid {
     while (queue.length > 0) {
       const { tile, path } = queue.shift()!;
       const { pos, paths } = tile;
-      const { x: row, y: col } = this.screenToIso(pos, true);
+      const { row, col } = this.screenToIso(pos, true);
       const key = `${row},${col}`;
 
       if (visited.has(key)) continue;
       visited.add(key);
 
-      // Check if we reached the target
       if (tile === targetTile) {
         return path;
       }
 
-      // Add neighbors to queue
       if (
         paths.includes("NORTH") &&
         col > 1 &&
@@ -705,8 +664,51 @@ class Grid {
       }
     }
 
-    // Return null if no path is found
     return null;
+  }
+
+  private getTargetDirection(
+    curPos: { row: number; col: number },
+    targetPos: { row: number; col: number }
+  ) {
+    if (targetPos.row > curPos.row) return "EAST";
+    if (targetPos.row < curPos.row) return "WEST";
+    if (targetPos.col > curPos.col) return "SOUTH";
+    if (targetPos.col < curPos.col) return "NORTH";
+    return "SAME";
+  }
+
+  private getDirectionalSegments(
+    result: { row: number; col: number }[]
+  ): { row: number; col: number }[] {
+    if (result.length < 2) return result;
+
+    const filtered: { row: number; col: number }[] = [];
+    let start = result[0];
+
+    for (let i = 1; i < result.length; i++) {
+      const prev = result[i - 1];
+      const curr = result[i];
+
+      // Determine the direction between previous and current
+      const direction = {
+        row: curr.row - prev.row,
+        col: curr.col - prev.col,
+      };
+
+      // Check if the direction changes
+      if (
+        i === result.length - 1 ||
+        direction.row !== result[i + 1].row - curr.row ||
+        direction.col !== result[i + 1].col - curr.col
+      ) {
+        // filtered.push(start); // Start of the segment
+        filtered.push(curr); // End of the segment
+        start = curr;
+      }
+    }
+
+    return filtered;
   }
 }
 

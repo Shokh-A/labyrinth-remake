@@ -69,7 +69,7 @@ class GameEngine {
         this.gameState = "MOVING";
       }
     } else if (this.gameState === "MOVING" && tile.isConnected) {
-      this.grid.movePlayer(ctx, tile, curPlayer);
+      this.grid.movePlayer(ctx, curPlayer, tile);
       // this.grid.lowerTiles(ctx);
 
       // this.curPlayerIndex = (this.curPlayerIndex + 1) % 2;

@@ -3,6 +3,7 @@ import Point from "./Point";
 
 class Player extends GameObject {
   private frame: number = 0;
+  private direction: string = "EAST";
   private lastUpdateTime: number = 0;
   private frameDurationInMs: number = 150;
 
@@ -31,6 +32,9 @@ class Player extends GameObject {
       this.lastUpdateTime = timestamp;
     }
 
+    this.direction =
+      this.target.direction !== "SAME" ? this.target.direction : this.direction;
+
     if (this.target.direction === "SOUTH") {
       this.pos.x -= 1;
       this.pos.y += 1 / 2;
@@ -48,7 +52,6 @@ class Player extends GameObject {
     if (this.pos.equals(this.target.pos)) {
       this.frame = 0;
       this.target = null;
-      console.log("Target reached");
     }
   }
 
@@ -58,8 +61,12 @@ class Player extends GameObject {
 
   setTargetPos(pos: Point, direction: string) {
     pos.y -= 10;
-    console.log(direction);
     this.target = { pos, direction };
+  }
+
+  resetDirectionAndFrame() {
+    this.direction = "EAST";
+    this.frame = 0;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
@@ -71,7 +78,7 @@ class Player extends GameObject {
     pos.x = pos.x - this.width / 2;
     pos.y = pos.y - this.height / 2;
 
-    const img = this.imgs[this.target?.direction || "EAST"];
+    const img = this.imgs[this.direction];
 
     ctx.drawImage(
       img,

@@ -39,7 +39,7 @@ class Tile extends GameObject {
     this.drawFace(ctx, pos, colors.left, this.drawLeftFace.bind(this));
     this.drawFace(ctx, pos, colors.right, this.drawRightFace.bind(this));
 
-    this.collectible?.draw(ctx);
+    if (!this.collectible?.isCollected) this.collectible?.draw(ctx);
   }
 
   private getTileColors() {

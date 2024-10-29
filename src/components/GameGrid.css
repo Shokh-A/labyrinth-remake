@@ -1,0 +1,17 @@
+.container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.canvas-container {
+  border: 2px solid #333;
+}
+
+#gameCanvas {
+  background-color: #d4f0ff;
+}
+
+#controlCanvas {
+  background-color: #ffe4d4;
+}

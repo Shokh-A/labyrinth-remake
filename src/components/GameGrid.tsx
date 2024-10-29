@@ -6,24 +6,27 @@ const WORLD_HEIGHT = 600;
 const TILE_WIDTH = 100;
 const TILE_DEPTH = 10;
 const NUM_OF_PLAYERS = 2;
-const NUM_OF_COLLECTIBLES = 4;
+const NUM_OF_COLLECTIBLES = 1;
 
 const GameGrid: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const gameWindowRef = useRef<HTMLCanvasElement | null>(null);
+  const infoPanelRef = useRef<HTMLCanvasElement | null>(null);
   const [gameEngine] = useState(
     new GameEngine(WORLD_WIDTH, TILE_WIDTH, TILE_DEPTH)
   );
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas = gameWindowRef.current;
     const ctx = canvas?.getContext("2d");
 
     if (!ctx || !canvas) return;
-    gameEngine.start(ctx, NUM_OF_PLAYERS, NUM_OF_COLLECTIBLES);
-  }, []);
+    gameEngine.start(ctx, NUM_OF_PLAYERS, NUM_OF_COLLECTIBLES).then(() => {
+      gameEngine.drawInfoPanel(infoPanelRef.current?.getContext("2d")!);
+    });
+  }, [gameEngine]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas = gameWindowRef.current;
     const ctx = canvas?.getContext("2d");
     if (!ctx || !canvas) return;
 
@@ -53,9 +56,21 @@ const GameGrid: React.FC = () => {
   // width = rows * Tile.width
   // height = cols * Tile.height + Tile.depth
   return (
-    <>
-      <canvas ref={canvasRef} width={WORLD_WIDTH} height={WORLD_HEIGHT} />
-    </>
+    <div className="container">
+      <canvas
+        id="gameCanvas"
+        className="canvas-container"
+        ref={gameWindowRef}
+        width={WORLD_WIDTH}
+        height={WORLD_HEIGHT}
+      />
+      <canvas
+        id="controlCanvas"
+        className="canvas-container"
+        ref={infoPanelRef}
+        height={WORLD_HEIGHT}
+      />
+    </div>
   );
 };
 

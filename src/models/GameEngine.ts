@@ -1,13 +1,16 @@
 import { Grid, Point } from "./index";
+import InfoPanel from "./InfoPanel";
 
 class GameEngine {
   private readonly grid: Grid;
+  private readonly infoPanel: InfoPanel;
   private numOfPlayers: number = 0;
   private curPlayerIndex: number = 0;
   private gameState: "IDLE" | "SHIFTING" | "MOVING" = "IDLE";
 
   constructor(worldWidth: number, tileWidth: number, tileDepth: number) {
     this.grid = new Grid(worldWidth, 7, tileWidth, tileDepth);
+    this.infoPanel = new InfoPanel();
   }
 
   public async start(
@@ -23,6 +26,10 @@ class GameEngine {
     } catch (error) {
       console.error("Error occurred during game start:", error);
     }
+  }
+
+  drawInfoPanel(ctx: CanvasRenderingContext2D): void {
+    this.infoPanel.draw(ctx);
   }
 
   private draw(ctx: CanvasRenderingContext2D): void {

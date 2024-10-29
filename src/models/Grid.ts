@@ -20,6 +20,7 @@ class Grid {
   hoveredTile: Tile | null = null;
   extraTile: Tile;
   private disabledTile: Tile | null = null;
+  private collectibles: Collectible[] = [];
   private players: Player[] = [];
   private animationDirection: "NORTH" | "SOUTH" | "EAST" | "WEST" = "NORTH";
 
@@ -58,8 +59,27 @@ class Grid {
     this.images = await preloadImages(imgSources);
 
     this.initializeTiles();
-    this.initializeCollectibles(numOfCollectibles);
+    this.initializeCollectibles(numOfPlayers * numOfCollectibles);
     this.initializePlayers(numOfPlayers);
+
+    this.distributeCollectibles(numOfCollectibles);
+  }
+
+  private distributeCollectibles(numOfCollectibles: number) {
+    let i = 0;
+    for (const player of this.players) {
+      for (let j = 0; j < numOfCollectibles; j++) {
+        player.targetCollectible = this.collectibles[i];
+        player.collectibles.push(this.collectibles[i]);
+        i++;
+      }
+    }
+    this.players.forEach((player) =>
+      console.log(
+        "To collect:",
+        this.screenToIso(player.targetCollectible!.pos)
+      )
+    );
   }
 
   private initializeTiles() {
@@ -103,13 +123,13 @@ class Grid {
       }
       uniquePositions.add(`${row},${col}`);
 
-      this.tiles[row][col].setCollectible(
-        new Collectible(
-          this.isoToScreen(new Point(row, col)),
-          i,
-          this.images.get(crystalsImg) as HTMLImageElement
-        )
+      const collectible = new Collectible(
+        this.isoToScreen(new Point(row, col)),
+        i,
+        this.images.get(crystalsImg) as HTMLImageElement
       );
+      this.tiles[row][col].setCollectible(collectible);
+      this.collectibles.push(collectible);
     }
   }
 
@@ -470,7 +490,7 @@ class Grid {
   private setColorAnimation() {
     this.tiles.flat().forEach((tile) => {
       if (tile && !tile.isConnected) {
-        tile.setTargetPos(tile.pos, DIRECTION.DARKER, 0.7);
+        tile.setTargetPos(tile.pos, DIRECTION.DARKER, 0.5);
       }
     });
   }
@@ -536,6 +556,7 @@ class Grid {
     playerIndex: number
   ) {
     const player = this.getPlayer(playerIndex);
+
     const startPos = this.screenToIso(player.pos, true);
     const shortestPath = this.findShortestPath(
       this.tiles[startPos.row][startPos.col],
@@ -565,6 +586,11 @@ class Grid {
     player.resetDirectionAndFrame();
     const finalPos = this.screenToIso(player.pos, true);
     this.tiles[finalPos.row][finalPos.col].setPlayer(player);
+    this.collectCollectible(
+      player,
+      this.tiles[finalPos.row][finalPos.col].collectible!
+    );
+
     this.lowerTiles(ctx);
   }
 
@@ -672,6 +698,14 @@ class Grid {
     }
 
     return filtered;
+  }
+
+  private collectCollectible(player: Player, collectible: Collectible) {
+    if (player.targetCollectible === collectible) {
+      console.log("Collected collectible");
+      player.collectCollectible(collectible);
+      console.log(this.screenToIso(player.targetCollectible.pos));
+    }
   }
 }
 

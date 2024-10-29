@@ -1,3 +1,4 @@
+import Collectible from "./Collectible";
 import GameObject, { DIRECTION } from "./GameObject";
 import Point from "./Point";
 
@@ -6,6 +7,8 @@ class Player extends GameObject {
   private direction: DIRECTION = DIRECTION.EAST;
   private lastUpdateTime: number = 0;
   private frameDurationInMs: number = 150;
+  public collectibles: Collectible[] = [];
+  public targetCollectible: Collectible | null = null;
 
   constructor(
     pos: Point,
@@ -14,6 +17,19 @@ class Player extends GameObject {
     }
   ) {
     super(pos, 60, 60);
+  }
+
+  collectCollectible(collectible: Collectible) {
+    collectible.isCollected = true;
+    if (!this.allCollectiblesCollected()) {
+      this.targetCollectible = this.collectibles.find(
+        (c) => !c.isCollected
+      ) as Collectible;
+    }
+  }
+
+  allCollectiblesCollected() {
+    return this.collectibles.every((c) => c.isCollected);
   }
 
   setTargetPos(pos: Point, direction: DIRECTION) {

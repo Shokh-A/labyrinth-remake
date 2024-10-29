@@ -2,7 +2,9 @@ import GameObject from "./GameObject";
 import Point from "./Point";
 
 class Collectible extends GameObject {
-  private spriteSheetCoords: { sx: number; sy: number };
+  public isCollected: boolean = false;
+  public spriteSheetCoords: { sx: number; sy: number };
+
   constructor(
     pos: Point,
     collectibleType: number,

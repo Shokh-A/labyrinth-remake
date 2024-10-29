@@ -715,6 +715,11 @@ class Grid {
       console.log(this.screenToIso(player.targetCollectible.pos));
     }
   }
+
+  getCurPlayerData(playerIndex: number) {
+    const player = this.getPlayer(playerIndex);
+    return player.getPlayerData();
+  }
 }
 
 export default Grid;

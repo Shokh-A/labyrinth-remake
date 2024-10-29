@@ -3,10 +3,13 @@ import headerImg from "../assets/images/ui/Header.png";
 import profileBg from "../assets/images/ui/Profile.png";
 import itemBg from "../assets/images/ui/Item.png";
 
-interface Item {
+interface PlayerData {
+  name: string;
   img: HTMLImageElement;
-  width: number;
-  height: number;
+  collectible: {
+    img: HTMLImageElement | undefined;
+    coords: { sx: number; sy: number } | undefined;
+  };
 }
 
 class InfoPanel {
@@ -14,6 +17,8 @@ class InfoPanel {
   private header: HTMLImageElement;
   private playerBg: HTMLImageElement;
   private collectibleBg: HTMLImageElement;
+
+  private curPlayerData: PlayerData | null = null;
 
   constructor() {
     this.panel = new Image();
@@ -27,6 +32,10 @@ class InfoPanel {
 
     this.collectibleBg = new Image();
     this.collectibleBg.src = itemBg;
+  }
+
+  setPlayerData(playerData: PlayerData) {
+    this.curPlayerData = playerData;
   }
 
   draw(ctx: CanvasRenderingContext2D) {
@@ -44,6 +53,20 @@ class InfoPanel {
       width,
       width
     );
+
+    if (this.curPlayerData && this.curPlayerData.img) {
+      ctx.drawImage(
+        this.curPlayerData.img,
+        0,
+        0,
+        350,
+        350,
+        ctx.canvas.width / 2 - 100 / 2,
+        30 + 100 / 2,
+        100,
+        100
+      );
+    }
 
     const width2 = width + 20;
     ctx.drawImage(
@@ -69,6 +92,26 @@ class InfoPanel {
       width,
       width
     );
+
+    if (
+      this.curPlayerData &&
+      this.curPlayerData.collectible.img &&
+      this.curPlayerData.collectible.coords
+    ) {
+      const collectibleImg = this.curPlayerData.collectible.img;
+      const { sx, sy } = this.curPlayerData.collectible.coords;
+      ctx.drawImage(
+        collectibleImg,
+        sx,
+        sy,
+        512,
+        512,
+        ctx.canvas.width / 2 - 100 / 2,
+        280 + 100 / 2,
+        100,
+        100
+      );
+    }
 
     const width2 = width + 20;
     ctx.drawImage(

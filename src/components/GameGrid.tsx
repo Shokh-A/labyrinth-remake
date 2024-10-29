@@ -19,10 +19,15 @@ const GameGrid: React.FC = () => {
     const canvas = gameWindowRef.current;
     const ctx = canvas?.getContext("2d");
 
-    if (!ctx || !canvas) return;
-    gameEngine.start(ctx, NUM_OF_PLAYERS, NUM_OF_COLLECTIBLES).then(() => {
-      gameEngine.drawInfoPanel(infoPanelRef.current?.getContext("2d")!);
-    });
+    const infoCanvas = infoPanelRef.current;
+    const infoCtx = infoCanvas?.getContext("2d");
+
+    if (!ctx || !canvas || !infoCtx || !infoCanvas) return;
+    gameEngine
+      .start(ctx, infoCtx, NUM_OF_PLAYERS, NUM_OF_COLLECTIBLES)
+      .then(() => {
+        gameEngine.drawInfoPanel(infoPanelRef.current?.getContext("2d")!);
+      });
   }, [gameEngine]);
 
   useEffect(() => {

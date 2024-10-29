@@ -2,6 +2,7 @@ import { Grid, Point } from "./index";
 import InfoPanel from "./InfoPanel";
 
 class GameEngine {
+  private infoPanelCtx: CanvasRenderingContext2D = null as any;
   private readonly grid: Grid;
   private readonly infoPanel: InfoPanel;
   private numOfPlayers: number = 0;
@@ -20,17 +21,27 @@ class GameEngine {
 
   public async start(
     ctx: CanvasRenderingContext2D,
+    infoPanelCtx: CanvasRenderingContext2D,
     numOfPlayers: number,
     numOfCollectibles: number
   ): Promise<void> {
     try {
+      this.infoPanelCtx = infoPanelCtx;
       this.numOfPlayers = numOfPlayers;
       await this.grid.init(numOfPlayers, numOfCollectibles);
+      this.switchToNextPlayer();
       this.gameState = "SHIFTING";
       this.draw(ctx);
     } catch (error) {
       console.error("Error occurred during game start:", error);
     }
+  }
+
+  switchToNextPlayer(): void {
+    this.curPlayerIndex = this.getNextPlayerIndex();
+    const playerData = this.grid.getCurPlayerData(this.curPlayerIndex);
+    this.infoPanel.setPlayerData(playerData);
+    this.drawInfoPanel(this.infoPanelCtx);
   }
 
   drawInfoPanel(ctx: CanvasRenderingContext2D): void {
@@ -94,7 +105,7 @@ class GameEngine {
         this.gameState = "SHIFTING";
       });
 
-      this.curPlayerIndex = this.getNextPlayerIndex();
+      this.switchToNextPlayer();
     }
   }
 }

@@ -19,6 +19,17 @@ class Player extends GameObject {
     super(pos, 60, 60);
   }
 
+  getPlayerData() {
+    return {
+      name: "Player Name",
+      img: this.imgs.SOUTH,
+      collectible: {
+        img: this.targetCollectible?.img,
+        coords: this.targetCollectible?.spriteSheetCoords,
+      },
+    };
+  }
+
   collectCollectible(collectible: Collectible) {
     collectible.isCollected = true;
     if (!this.allCollectiblesCollected()) {

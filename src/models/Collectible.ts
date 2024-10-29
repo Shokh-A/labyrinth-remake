@@ -8,7 +8,7 @@ class Collectible extends GameObject {
   constructor(
     pos: Point,
     collectibleType: number,
-    private img: HTMLImageElement
+    public img: HTMLImageElement
   ) {
     super(pos, 40, 40);
     this.spriteSheetCoords = this.calculateSpriteSheetCoords(collectibleType);

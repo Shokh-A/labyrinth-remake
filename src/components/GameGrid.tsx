@@ -12,7 +12,7 @@ const GameGrid: React.FC = () => {
   const gameWindowRef = useRef<HTMLCanvasElement | null>(null);
   const infoPanelRef = useRef<HTMLCanvasElement | null>(null);
   const [gameEngine] = useState(
-    new GameEngine(WORLD_WIDTH, TILE_WIDTH, TILE_DEPTH)
+    new GameEngine(WORLD_WIDTH, WORLD_HEIGHT, TILE_WIDTH, TILE_DEPTH)
   );
 
   useEffect(() => {

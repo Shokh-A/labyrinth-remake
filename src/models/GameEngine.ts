@@ -8,8 +8,13 @@ class GameEngine {
   private curPlayerIndex: number = 0;
   private gameState: "IDLE" | "SHIFTING" | "MOVING" = "IDLE";
 
-  constructor(worldWidth: number, tileWidth: number, tileDepth: number) {
-    this.grid = new Grid(worldWidth, 7, tileWidth, tileDepth);
+  constructor(
+    worldWidth: number,
+    worldHeight: number,
+    tileWidth: number,
+    tileDepth: number
+  ) {
+    this.grid = new Grid(worldWidth, worldHeight, 7, tileWidth, tileDepth);
     this.infoPanel = new InfoPanel();
   }
 

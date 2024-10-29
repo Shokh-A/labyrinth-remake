@@ -26,6 +26,7 @@ class Grid {
 
   constructor(
     private worldWidth: number,
+    private worldHeight: number,
     private gridSize: number,
     private tileWidth: number,
     private tileDepth: number
@@ -258,9 +259,11 @@ class Grid {
   }
 
   private isoToScreen(pos: Point): Point {
+    const gridWidth = (this.tileWidth / 2) * this.gridSize;
+    const offsetY = (this.worldHeight - gridWidth) / 2;
     return new Point(
       (pos.x - pos.y) * (this.tileWidth / 2) + this.worldWidth / 2,
-      (pos.x + pos.y) * (this.tileHeight / 2)
+      (pos.x + pos.y) * (this.tileHeight / 2) + offsetY
     );
   }
 
@@ -268,16 +271,24 @@ class Grid {
     screenPos: Point,
     hasOffset: boolean = false
   ): { row: number; col: number } {
+    const gridWidth = (this.tileWidth / 2) * this.gridSize;
+    const offsetY = (this.worldHeight - gridWidth) / 2;
+
     const screenY = screenPos.y + (hasOffset ? 10 : 0);
+
     const centeredX = screenPos.x - this.worldWidth / 2;
+    const centeredY = screenY - offsetY;
+
     const x =
-      (centeredX / (this.tileWidth / 2) + screenY / (this.tileHeight / 2)) / 2;
+      (centeredX / (this.tileWidth / 2) + centeredY / (this.tileHeight / 2)) /
+      2;
     const y =
-      (screenY / (this.tileHeight / 2) - centeredX / (this.tileWidth / 2)) / 2;
+      (centeredY / (this.tileHeight / 2) - centeredX / (this.tileWidth / 2)) /
+      2;
     return { row: Math.floor(x), col: Math.floor(y) };
   }
 
-  public render(ctx: CanvasRenderingContext2D, timestamp: number = 0) {
+  render(ctx: CanvasRenderingContext2D, timestamp: number = 0) {
     ctx.clearRect(0, 0, this.worldWidth, this.worldWidth);
     this.drawTiles(ctx);
     this.drawPlayers(ctx, timestamp);
@@ -312,7 +323,7 @@ class Grid {
     }
   }
 
-  public animate(ctx: CanvasRenderingContext2D): Promise<void> {
+  private animate(ctx: CanvasRenderingContext2D): Promise<void> {
     return new Promise((resolve) => {
       const animationStep = (timestamp: number) => {
         this.render(ctx, timestamp);
@@ -331,7 +342,7 @@ class Grid {
     });
   }
 
-  public getTile(screenPos: Point, hasOffset: boolean = false): Tile | null {
+  getTile(screenPos: Point, hasOffset: boolean = false): Tile | null {
     const { row, col } = this.screenToIso(screenPos, hasOffset);
     if (this.isWithinGrid(row, col)) {
       return this.tiles[row][col];
@@ -346,7 +357,7 @@ class Grid {
     return null;
   }
 
-  public swapWithExtraTile(tile: Tile) {
+  swapWithExtraTile(tile: Tile) {
     const { row, col } = this.screenToIso(tile.pos);
     const tilePos = tile.pos;
     const extraTilePos = this.extraTile.pos;
@@ -364,7 +375,7 @@ class Grid {
     }
   }
 
-  public rotateTile(tile: Tile) {
+  rotateTile(tile: Tile) {
     const imgRotationMap: {
       [key: string]: Path;
     } = {
@@ -387,7 +398,7 @@ class Grid {
     tile.paths = imgRotationMap[pathName].paths;
   }
 
-  public async shiftAndRise(
+  async shiftAndRise(
     ctx: CanvasRenderingContext2D,
     tile: Tile,
     playerIndex: number
@@ -476,10 +487,7 @@ class Grid {
     }
   }
 
-  public async riseConnectedTiles(
-    ctx: CanvasRenderingContext2D,
-    playerIndex: number
-  ) {
+  async riseConnectedTiles(ctx: CanvasRenderingContext2D, playerIndex: number) {
     const player = this.getPlayer(playerIndex);
     const { row, col } = this.screenToIso(player.pos);
     this.riseTiles(this.tiles[row][col]);
@@ -538,7 +546,7 @@ class Grid {
     }
   }
 
-  public async lowerTiles(ctx: CanvasRenderingContext2D) {
+  async lowerTiles(ctx: CanvasRenderingContext2D) {
     this.tiles.flat().forEach((tile) => {
       if (tile && tile.isConnected) tile.setIsConnected(false);
       else if (tile) tile.setTargetPos(tile.pos, DIRECTION.BRIGHTER, 0);
@@ -550,7 +558,7 @@ class Grid {
     return this.players[index];
   }
 
-  public async movePlayer(
+  async movePlayer(
     ctx: CanvasRenderingContext2D,
     targetTile: Tile,
     playerIndex: number

@@ -80,7 +80,7 @@ class InfoPanel {
     ctx.font = "20px Arial";
     ctx.fillStyle = "black";
     ctx.textAlign = "center";
-    ctx.fillText("Player Name", ctx.canvas.width / 2, 262);
+    ctx.fillText(this.curPlayerData?.name ?? "", ctx.canvas.width / 2, 262);
   }
 
   drawCollectibleInfo(ctx: CanvasRenderingContext2D) {

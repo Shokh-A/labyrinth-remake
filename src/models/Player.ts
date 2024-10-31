@@ -11,6 +11,7 @@ class Player extends GameObject {
   public targetCollectible: Collectible | null = null;
 
   constructor(
+    private name: string,
     pos: Point,
     public imgs: {
       [key: string]: HTMLImageElement;
@@ -21,7 +22,7 @@ class Player extends GameObject {
 
   getPlayerData() {
     return {
-      name: "Player Name",
+      name: this.name,
       img: this.imgs.SOUTH,
       collectible: {
         img: this.targetCollectible?.img,

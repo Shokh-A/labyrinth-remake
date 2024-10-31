@@ -1,10 +1,10 @@
 import "./App.css";
-import GameGrid from "./components/GameGrid";
+import GameSetup from "./components/GameSetup";
 
 function App() {
   return (
     <div className="App">
-      <GameGrid />
+      <GameSetup />
     </div>
   );
 }

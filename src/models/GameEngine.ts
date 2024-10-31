@@ -9,29 +9,24 @@ class GameEngine {
   private curPlayerIndex: number = 0;
   private gameState: "IDLE" | "SHIFTING" | "MOVING" = "IDLE";
 
-  constructor(
-    worldWidth: number,
-    worldHeight: number,
-    tileWidth: number,
-    tileDepth: number
-  ) {
-    this.grid = new Grid(worldWidth, worldHeight, 7, tileWidth, tileDepth);
+  constructor(worldWidth: number, worldHeight: number) {
+    this.grid = new Grid(worldWidth, worldHeight, 7, 100, 10);
     this.infoPanel = new InfoPanel();
   }
 
   public async start(
     ctx: CanvasRenderingContext2D,
     infoPanelCtx: CanvasRenderingContext2D,
-    numOfPlayers: number,
+    playerNames: string[],
     numOfCollectibles: number
   ): Promise<void> {
     try {
       this.infoPanelCtx = infoPanelCtx;
-      this.numOfPlayers = numOfPlayers;
-      await this.grid.init(numOfPlayers, numOfCollectibles);
+      this.numOfPlayers = playerNames.length;
+      await this.grid.init(playerNames, numOfCollectibles);
       this.switchToNextPlayer();
       this.gameState = "SHIFTING";
-      this.draw(ctx);
+      this.render(ctx);
     } catch (error) {
       console.error("Error occurred during game start:", error);
     }
@@ -48,7 +43,7 @@ class GameEngine {
     this.infoPanel.draw(ctx);
   }
 
-  private draw(ctx: CanvasRenderingContext2D): void {
+  private render(ctx: CanvasRenderingContext2D): void {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     this.grid.render(ctx);
   }
@@ -67,10 +62,10 @@ class GameEngine {
     const tile = this.grid.getTile(new Point(screenX, screenY));
     if (tile !== this.grid.hoveredTile && this.grid.hoveredTile) {
       this.grid.swapWithExtraTile(this.grid.hoveredTile);
-      this.draw(ctx);
+      this.render(ctx);
     } else if (tile && tile.tileType === "ENABLED" && !this.grid.hoveredTile) {
       this.grid.swapWithExtraTile(tile);
-      this.draw(ctx);
+      this.render(ctx);
     }
   }
 
@@ -92,7 +87,7 @@ class GameEngine {
     if (this.gameState === "SHIFTING") {
       if (tile === this.grid.extraTile) {
         this.grid.rotateTile(tile);
-        this.draw(ctx);
+        this.render(ctx);
       } else if (tile === this.grid.hoveredTile) {
         this.gameState = "IDLE";
         this.grid.shiftAndRise(ctx, tile, this.curPlayerIndex).then(() => {
@@ -103,9 +98,8 @@ class GameEngine {
       this.gameState = "IDLE";
       this.grid.movePlayer(ctx, tile, this.curPlayerIndex).then(() => {
         this.gameState = "SHIFTING";
+        this.switchToNextPlayer();
       });
-
-      this.switchToNextPlayer();
     }
   }
 }

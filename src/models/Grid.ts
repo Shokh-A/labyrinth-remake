@@ -48,7 +48,7 @@ class Grid {
     this.movablePaths = movalePaths;
   }
 
-  async init(numOfPlayers: number, numOfCollectibles: number) {
+  async init(playerNames: string[], numOfCollectibles: number) {
     const imgSources = [
       ...Object.values(pathsMap).map((path) => path.imgSrc),
       crystalsImg,
@@ -60,8 +60,8 @@ class Grid {
     this.images = await preloadImages(imgSources);
 
     this.initializeTiles();
-    this.initializeCollectibles(numOfPlayers * numOfCollectibles);
-    this.initializePlayers(numOfPlayers);
+    this.initializeCollectibles(playerNames.length * numOfCollectibles);
+    this.initializePlayers(playerNames);
 
     this.distributeCollectibles(numOfCollectibles);
   }
@@ -134,7 +134,7 @@ class Grid {
     }
   }
 
-  private initializePlayers(numOfPlayers: number) {
+  private initializePlayers(playerNames: string[]) {
     const spawnPoints = [
       new Point(1, 1),
       new Point(7, 7),
@@ -151,8 +151,12 @@ class Grid {
       WEST: this.images.get(playerImgWest) as HTMLImageElement,
     };
 
-    for (let i = 0; i < numOfPlayers; i++) {
-      const player = new Player(this.isoToScreen(spawnPoints[i]), playerImgs);
+    for (let i = 0; i < playerNames.length; i++) {
+      const player = new Player(
+        playerNames[i] || `Player ${i + 1}`,
+        this.isoToScreen(spawnPoints[i]),
+        playerImgs
+      );
       this.tiles[spawnPoints[i].x][spawnPoints[i].y].setPlayer(player);
       this.players.push(player);
     }

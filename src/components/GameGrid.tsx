@@ -3,17 +3,19 @@ import { GameEngine } from "../models";
 
 const WORLD_WIDTH = 900;
 const WORLD_HEIGHT = 600;
-const TILE_WIDTH = 100;
-const TILE_DEPTH = 10;
-const NUM_OF_PLAYERS = 2;
-const NUM_OF_COLLECTIBLES = 1;
 
-const GameGrid: React.FC = () => {
+interface GameGridProps {
+  playerNames: string[];
+  numOfCollectibles: number;
+}
+
+const GameGrid: React.FC<GameGridProps> = ({
+  playerNames,
+  numOfCollectibles,
+}) => {
   const gameWindowRef = useRef<HTMLCanvasElement | null>(null);
   const infoPanelRef = useRef<HTMLCanvasElement | null>(null);
-  const [gameEngine] = useState(
-    new GameEngine(WORLD_WIDTH, WORLD_HEIGHT, TILE_WIDTH, TILE_DEPTH)
-  );
+  const [gameEngine] = useState(new GameEngine(WORLD_WIDTH, WORLD_HEIGHT));
 
   useEffect(() => {
     const canvas = gameWindowRef.current;
@@ -23,11 +25,9 @@ const GameGrid: React.FC = () => {
     const infoCtx = infoCanvas?.getContext("2d");
 
     if (!ctx || !canvas || !infoCtx || !infoCanvas) return;
-    gameEngine
-      .start(ctx, infoCtx, NUM_OF_PLAYERS, NUM_OF_COLLECTIBLES)
-      .then(() => {
-        gameEngine.drawInfoPanel(infoPanelRef.current?.getContext("2d")!);
-      });
+    gameEngine.start(ctx, infoCtx, playerNames, numOfCollectibles).then(() => {
+      gameEngine.drawInfoPanel(infoPanelRef.current?.getContext("2d")!);
+    });
   }, [gameEngine]);
 
   useEffect(() => {

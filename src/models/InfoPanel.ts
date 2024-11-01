@@ -1,7 +1,6 @@
-import panelBg from "../assets/images/ui/Panel.png";
 import headerImg from "../assets/images/ui/Header.png";
-import profileBg from "../assets/images/ui/Profile.png";
 import itemBg from "../assets/images/ui/Item.png";
+import profileBg from "../assets/images/ui/Profile.png";
 
 interface PlayerData {
   name: string;
@@ -13,7 +12,6 @@ interface PlayerData {
 }
 
 class InfoPanel {
-  private panel: HTMLImageElement;
   private header: HTMLImageElement;
   private playerBg: HTMLImageElement;
   private collectibleBg: HTMLImageElement;
@@ -21,9 +19,6 @@ class InfoPanel {
   private curPlayerData: PlayerData | null = null;
 
   constructor() {
-    this.panel = new Image();
-    this.panel.src = panelBg;
-
     this.header = new Image();
     this.header.src = headerImg;
 
@@ -39,7 +34,6 @@ class InfoPanel {
   }
 
   draw(ctx: CanvasRenderingContext2D) {
-    ctx.drawImage(this.panel, 0, 0, ctx.canvas.width, ctx.canvas.height);
     this.drawPlayerInfo(ctx);
     this.drawCollectibleInfo(ctx);
   }

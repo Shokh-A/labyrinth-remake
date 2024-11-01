@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { GameEngine } from "../models";
 import "./GameGrid.css";
+import panelBg from "../assets/images/ui/Panel.png";
 
 const WORLD_WIDTH = 900;
 const WORLD_HEIGHT = 600;
@@ -80,14 +81,12 @@ const GameGrid: React.FC<GameGridProps> = ({
             ref={gameWindowRef}
             width={WORLD_WIDTH}
             height={WORLD_HEIGHT}
-            style={{ width: WORLD_WIDTH + "px" }}
           />
           <canvas
             id="controlCanvas"
             ref={infoPanelRef}
             width={300}
             height={WORLD_HEIGHT}
-            style={{ width: "300px" }}
           />
         </div>
       )}

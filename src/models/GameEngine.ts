@@ -7,14 +7,15 @@ class GameEngine {
   private readonly infoPanel: InfoPanel;
   private numOfPlayers: number = 0;
   private curPlayerIndex: number = 0;
-  private gameState: "IDLE" | "SHIFTING" | "MOVING" = "IDLE";
+  private gameState: "IDLE" | "SHIFTING" | "MOVING" | "OVER" = "IDLE";
+  private gameOverCallback: (() => void) | null = null;
 
   constructor(worldWidth: number, worldHeight: number) {
     this.grid = new Grid(worldWidth, worldHeight, 7, 100, 10);
     this.infoPanel = new InfoPanel();
   }
 
-  public async start(
+  async start(
     ctx: CanvasRenderingContext2D,
     infoPanelCtx: CanvasRenderingContext2D,
     playerNames: string[],
@@ -98,8 +99,28 @@ class GameEngine {
       this.gameState = "IDLE";
       this.grid.movePlayer(ctx, tile, this.curPlayerIndex).then(() => {
         this.gameState = "SHIFTING";
+        this.gameOver();
+        this.checkGameStatus();
         this.switchToNextPlayer();
       });
+    }
+  }
+
+  onGameOver(callback: () => void): void {
+    this.gameOverCallback = callback;
+  }
+
+  gameOver(): boolean {
+    if (this.grid.isGameFinished(this.curPlayerIndex)) {
+      this.gameState = "OVER";
+      return true;
+    }
+    return false;
+  }
+
+  checkGameStatus(): void {
+    if (this.gameState === "OVER") {
+      this.gameOverCallback?.();
     }
   }
 }

@@ -8,7 +8,6 @@ class Player extends GameObject {
   private lastUpdateTime: number = 0;
   private frameDurationInMs: number = 150;
   public collectibles: Collectible[] = [];
-  public targetCollectible: Collectible | null = null;
 
   constructor(
     private name: string,
@@ -21,22 +20,25 @@ class Player extends GameObject {
   }
 
   getPlayerData() {
+    const collectible = this.getCollectibleToCollect();
     return {
       name: this.name,
       img: this.imgs.SOUTH,
       collectible: {
-        img: this.targetCollectible?.img,
-        coords: this.targetCollectible?.spriteSheetCoords,
+        img: collectible?.img,
+        coords: collectible?.spriteSheetCoords,
       },
     };
   }
 
-  collectCollectible(collectible: Collectible) {
-    collectible.isCollected = true;
-    if (!this.allCollectiblesCollected()) {
-      this.targetCollectible = this.collectibles.find(
-        (c) => !c.isCollected
-      ) as Collectible;
+  getCollectibleToCollect() {
+    return this.collectibles.find((c) => !c.isCollected);
+  }
+
+  collectCollectible(collectibleOnTile: Collectible) {
+    const collectible = this.getCollectibleToCollect();
+    if (collectible && collectible === collectibleOnTile) {
+      collectible.isCollected = true;
     }
   }
 

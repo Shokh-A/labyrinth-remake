@@ -16,6 +16,8 @@ const GameGrid: React.FC<GameGridProps> = ({
   const gameWindowRef = useRef<HTMLCanvasElement | null>(null);
   const infoPanelRef = useRef<HTMLCanvasElement | null>(null);
   const [gameEngine] = useState(new GameEngine(WORLD_WIDTH, WORLD_HEIGHT));
+  const [isGameStarted, setIsGameStarted] = useState(false);
+  const [gameOver, setGameOver] = useState(false);
 
   useEffect(() => {
     const canvas = gameWindowRef.current;
@@ -26,7 +28,7 @@ const GameGrid: React.FC<GameGridProps> = ({
 
     if (!ctx || !canvas || !infoCtx || !infoCanvas) return;
     gameEngine.start(ctx, infoCtx, playerNames, numOfCollectibles).then(() => {
-      gameEngine.drawInfoPanel(infoPanelRef.current?.getContext("2d")!);
+      setIsGameStarted(true);
     });
   }, [gameEngine]);
 
@@ -34,6 +36,10 @@ const GameGrid: React.FC<GameGridProps> = ({
     const canvas = gameWindowRef.current;
     const ctx = canvas?.getContext("2d");
     if (!ctx || !canvas) return;
+
+    gameEngine.onGameOver(() => {
+      setGameOver(true);
+    });
 
     const handleMouseHover = (e: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
@@ -61,21 +67,24 @@ const GameGrid: React.FC<GameGridProps> = ({
   // width = rows * Tile.width
   // height = cols * Tile.height + Tile.depth
   return (
-    <div className="container">
-      <canvas
-        id="gameCanvas"
-        className="canvas-container"
-        ref={gameWindowRef}
-        width={WORLD_WIDTH}
-        height={WORLD_HEIGHT}
-      />
-      <canvas
-        id="controlCanvas"
-        className="canvas-container"
-        ref={infoPanelRef}
-        height={WORLD_HEIGHT}
-      />
-    </div>
+    <>
+      {gameOver && <h1>Game Over!</h1>}
+      <div className="container">
+        <canvas
+          id="gameCanvas"
+          className="canvas-container"
+          ref={gameWindowRef}
+          width={WORLD_WIDTH}
+          height={WORLD_HEIGHT}
+        />
+        <canvas
+          id="controlCanvas"
+          className="canvas-container"
+          ref={infoPanelRef}
+          height={WORLD_HEIGHT}
+        />
+      </div>
+    </>
   );
 };
 

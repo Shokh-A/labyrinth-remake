@@ -1,16 +1,16 @@
 import crystalsImg from "../assets/images/crystals/Crystals.png";
-import playerImgSouth from "../assets/images/sprites/Front_S.png";
-import playerImgEast from "../assets/images/sprites/Front_E.png";
 import playerImgNorth from "../assets/images/sprites/Back_N.png";
 import playerImgWest from "../assets/images/sprites/Back_W.png";
+import playerImgEast from "../assets/images/sprites/Front_E.png";
+import playerImgSouth from "../assets/images/sprites/Front_S.png";
 import {
   movalePaths,
   Path,
   pathsMap,
   preloadImages,
 } from "../services/imageLoader";
-import { Collectible, Player, Point, Tile } from "./index";
 import { DIRECTION } from "./GameObject";
+import { Collectible, Player, Point, Tile } from "./index";
 
 class Grid {
   private tileHeight: number;
@@ -70,17 +70,10 @@ class Grid {
     let i = 0;
     for (const player of this.players) {
       for (let j = 0; j < numOfCollectibles; j++) {
-        player.targetCollectible = this.collectibles[i];
         player.collectibles.push(this.collectibles[i]);
         i++;
       }
     }
-    this.players.forEach((player) =>
-      console.log(
-        "To collect:",
-        this.screenToIso(player.targetCollectible!.pos)
-      )
-    );
   }
 
   private initializeTiles() {
@@ -598,12 +591,16 @@ class Grid {
     player.resetDirectionAndFrame();
     const finalPos = this.screenToIso(player.pos, true);
     this.tiles[finalPos.row][finalPos.col].setPlayer(player);
-    this.collectCollectible(
-      player,
-      this.tiles[finalPos.row][finalPos.col].collectible!
-    );
+    const collectible = this.tiles[finalPos.row][finalPos.col].collectible;
+    if (collectible) {
+      player.collectCollectible(collectible);
+    }
 
     this.lowerTiles(ctx);
+  }
+
+  isGameFinished(playerIndex: number) {
+    return this.getPlayer(playerIndex).allCollectiblesCollected();
   }
 
   private findShortestPath(startTile: Tile, targetTile: Tile): Tile[] | null {
@@ -710,14 +707,6 @@ class Grid {
     }
 
     return filtered;
-  }
-
-  private collectCollectible(player: Player, collectible: Collectible) {
-    if (player.targetCollectible === collectible) {
-      console.log("Collected collectible");
-      player.collectCollectible(collectible);
-      console.log(this.screenToIso(player.targetCollectible.pos));
-    }
   }
 
   getCurPlayerData(playerIndex: number) {

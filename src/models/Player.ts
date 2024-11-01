@@ -132,7 +132,7 @@ class Player extends GameObject {
     const img = this.imgs[this.direction];
 
     ctx.shadowColor = this.color;
-    ctx.shadowBlur = 15;
+    ctx.shadowBlur = 10;
     ctx.drawImage(
       img,
       sx,

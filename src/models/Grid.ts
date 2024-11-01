@@ -3,12 +3,7 @@ import playerImgNorth from "../assets/images/sprites/Back_N.png";
 import playerImgWest from "../assets/images/sprites/Back_W.png";
 import playerImgEast from "../assets/images/sprites/Front_E.png";
 import playerImgSouth from "../assets/images/sprites/Front_S.png";
-import {
-  movalePaths,
-  Path,
-  pathsMap,
-  preloadImages,
-} from "../services/imageLoader";
+import { Path, pathsMap, preloadImages } from "../services/imageLoader";
 import { DIRECTION } from "./GameObject";
 import { Collectible, Player, Point, Tile } from "./index";
 
@@ -45,7 +40,38 @@ class Grid {
       [],
       "MOVABLE"
     );
-    this.movablePaths = movalePaths;
+    this.movablePaths = this.getMovablePaths();
+  }
+
+  getMovablePaths(): Path[] {
+    const movablePathsTurn = [
+      ...this.createPaths(4, pathsMap.southEast),
+      ...this.createPaths(4, pathsMap.southWest),
+      ...this.createPaths(4, pathsMap.northWest),
+      ...this.createPaths(3, pathsMap.northEast),
+    ];
+
+    const movablePathsStraight = [
+      ...this.createPaths(6, pathsMap.eastWest),
+      ...this.createPaths(7, pathsMap.northSouth),
+    ];
+
+    const movablePathsDetour = [
+      ...this.createPaths(1, pathsMap.southEastWest),
+      ...this.createPaths(2, pathsMap.northEastWest),
+      ...this.createPaths(1, pathsMap.northSouthWest),
+      ...this.createPaths(2, pathsMap.northSouthEast),
+    ];
+
+    return [
+      ...movablePathsTurn,
+      ...movablePathsStraight,
+      ...movablePathsDetour,
+    ];
+  }
+
+  createPaths(count: number, path: Path) {
+    return new Array(count).fill(path);
   }
 
   async init(playerNames: string[], numOfCollectibles: number) {
@@ -143,7 +169,7 @@ class Grid {
       NORTH: this.images.get(playerImgNorth) as HTMLImageElement,
       WEST: this.images.get(playerImgWest) as HTMLImageElement,
     };
-    const playerColors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"];
+    const playerColors = ["#FF0000", "#0000FF", "#00FF00", "#FFFF00"];
 
     for (let i = 0; i < playerNames.length; i++) {
       const player = new Player(

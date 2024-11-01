@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { GameEngine } from "../models";
 import "./GameGrid.css";
-import panelBg from "../assets/images/ui/Panel.png";
 
 const WORLD_WIDTH = 900;
 const WORLD_HEIGHT = 600;
@@ -19,7 +18,9 @@ const GameGrid: React.FC<GameGridProps> = ({
 }) => {
   const gameWindowRef = useRef<HTMLCanvasElement | null>(null);
   const infoPanelRef = useRef<HTMLCanvasElement | null>(null);
-  const [gameEngine] = useState(new GameEngine(WORLD_WIDTH, WORLD_HEIGHT));
+  const [gameEngine, setGameEngine] = useState(
+    new GameEngine(WORLD_WIDTH, WORLD_HEIGHT)
+  );
   const [gameOver, setGameOver] = useState(false);
 
   useEffect(() => {
@@ -72,7 +73,14 @@ const GameGrid: React.FC<GameGridProps> = ({
       {gameOver ? (
         <div>
           <h1>Game Over</h1>
-          <button onClick={onReset}>Reset</button>
+          <button
+            onClick={() => {
+              onReset();
+              setGameEngine(new GameEngine(WORLD_WIDTH, WORLD_HEIGHT));
+            }}
+          >
+            Reset
+          </button>
         </div>
       ) : (
         <div className="container">

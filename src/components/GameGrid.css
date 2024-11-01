@@ -1,17 +1,11 @@
 .container {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  overflow-x: auto;
+  white-space: nowrap;
 }
 
-.canvas-container {
-  border: 2px solid #333;
-}
-
-#gameCanvas {
-  background-color: #d4f0ff;
-}
-
+#gameCanvas,
 #controlCanvas {
-  background-color: #ffe4d4;
+  background-color: rgb(168 111 84);
+  flex-shrink: 0;
 }

@@ -12,6 +12,7 @@ class Player extends GameObject {
 
   constructor(
     private name: string,
+    private color: string,
     pos: Point,
     public imgs: {
       [key: string]: HTMLImageElement;
@@ -24,6 +25,7 @@ class Player extends GameObject {
     const collectible = this.getCollectibleToCollect();
     return {
       name: this.name,
+      color: this.color,
       score: this.getScore(),
       img: this.imgs.SOUTH,
       collectible: {
@@ -129,6 +131,8 @@ class Player extends GameObject {
 
     const img = this.imgs[this.direction];
 
+    ctx.shadowColor = this.color;
+    ctx.shadowBlur = 15;
     ctx.drawImage(
       img,
       sx,
@@ -140,6 +144,7 @@ class Player extends GameObject {
       this.width,
       this.height
     );
+    ctx.shadowColor = "transparent";
   }
 }
 

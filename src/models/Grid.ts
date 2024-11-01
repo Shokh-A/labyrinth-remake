@@ -143,10 +143,12 @@ class Grid {
       NORTH: this.images.get(playerImgNorth) as HTMLImageElement,
       WEST: this.images.get(playerImgWest) as HTMLImageElement,
     };
+    const playerColors = ["#FF0000", "#00FF00", "#0000FF", "#FFFF00"];
 
     for (let i = 0; i < playerNames.length; i++) {
       const player = new Player(
         playerNames[i] || `Player ${i + 1}`,
+        playerColors[i],
         this.isoToScreen(spawnPoints[i]),
         playerImgs
       );

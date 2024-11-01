@@ -4,6 +4,7 @@ import profileBg from "../assets/images/ui/Profile.png";
 
 interface PlayerData {
   name: string;
+  color: string;
   score: number;
   img: HTMLImageElement;
   collectible: {
@@ -51,6 +52,8 @@ class InfoPanel {
     );
 
     if (this.curPlayerData && this.curPlayerData.img) {
+      ctx.shadowColor = this.curPlayerData.color;
+      ctx.shadowBlur = 10;
       ctx.drawImage(
         this.curPlayerData.img,
         0,
@@ -62,6 +65,7 @@ class InfoPanel {
         100,
         100
       );
+      ctx.shadowColor = "transparent";
     }
 
     const width2 = width + 20;

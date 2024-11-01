@@ -49,6 +49,10 @@ const GameSetup: React.FC = () => {
         <GameGrid
           playerNames={playerNames}
           numOfCollectibles={numCollectibles!}
+          onReset={() => {
+            setShowGameGrid(false);
+            setIsModalOpen(true);
+          }}
         />
       ) : (
         isModalOpen && (

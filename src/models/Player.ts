@@ -4,6 +4,7 @@ import Point from "./Point";
 
 class Player extends GameObject {
   private frame: number = 0;
+  private totalFrames: number = 4;
   private direction: DIRECTION = DIRECTION.EAST;
   private lastUpdateTime: number = 0;
   private frameDurationInMs: number = 150;
@@ -23,12 +24,17 @@ class Player extends GameObject {
     const collectible = this.getCollectibleToCollect();
     return {
       name: this.name,
+      score: this.getScore(),
       img: this.imgs.SOUTH,
       collectible: {
         img: collectible?.img,
         coords: collectible?.spriteSheetCoords,
       },
     };
+  }
+
+  getScore() {
+    return this.collectibles.filter((c) => c.isCollected).length;
   }
 
   getCollectibleToCollect() {
@@ -77,7 +83,7 @@ class Player extends GameObject {
     const elapsedTime = timestamp - this.lastUpdateTime;
 
     if (elapsedTime > this.frameDurationInMs) {
-      this.frame = (this.frame + 1) % 4;
+      this.frame = (this.frame + 1) % this.totalFrames;
       this.lastUpdateTime = timestamp;
     }
   }

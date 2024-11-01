@@ -4,6 +4,7 @@ import profileBg from "../assets/images/ui/Profile.png";
 
 interface PlayerData {
   name: string;
+  score: number;
   img: HTMLImageElement;
   collectible: {
     img: HTMLImageElement | undefined;
@@ -34,6 +35,7 @@ class InfoPanel {
   }
 
   draw(ctx: CanvasRenderingContext2D) {
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     this.drawPlayerInfo(ctx);
     this.drawCollectibleInfo(ctx);
   }
@@ -66,15 +68,20 @@ class InfoPanel {
     ctx.drawImage(
       this.header,
       ctx.canvas.width / 2 - width2 / 2,
-      230,
+      210,
       width2,
-      width2 / 3.5
+      (width2 + 200) / 3.5
     );
 
     ctx.font = "20px Arial";
     ctx.fillStyle = "black";
     ctx.textAlign = "center";
-    ctx.fillText(this.curPlayerData?.name ?? "", ctx.canvas.width / 2, 262);
+    ctx.fillText(this.curPlayerData?.name ?? "", ctx.canvas.width / 2, 257);
+    ctx.fillText(
+      "Score: " + (this.curPlayerData?.score ?? 0).toString(),
+      ctx.canvas.width / 2,
+      277
+    );
   }
 
   drawCollectibleInfo(ctx: CanvasRenderingContext2D) {
@@ -82,7 +89,7 @@ class InfoPanel {
     ctx.drawImage(
       this.collectibleBg,
       ctx.canvas.width / 2 - width / 2,
-      280,
+      300,
       width,
       width
     );

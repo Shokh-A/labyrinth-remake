@@ -401,26 +401,24 @@ class Grid {
   }
 
   rotateTile(tile: Tile) {
-    const imgRotationMap: {
-      [key: string]: Path;
-    } = {
-      "Straight_EW.png": pathsMap.northSouth,
-      "Straight_NS.png": pathsMap.eastWest,
-      "Turn_NW.png": pathsMap.northEast,
-      "Turn_NE.png": pathsMap.southEast,
-      "Turn_SE.png": pathsMap.southWest,
-      "Turn_SW.png": pathsMap.northWest,
-      "Detour_NEW.png": pathsMap.northSouthEast,
-      "Detour_NSE.png": pathsMap.southEastWest,
-      "Detour_SEW.png": pathsMap.northSouthWest,
-      "Detour_NSW.png": pathsMap.northEastWest,
+    const pathsRotationMap: { [key: string]: string } = {
+      NORTH: "EAST",
+      EAST: "SOUTH",
+      SOUTH: "WEST",
+      WEST: "NORTH",
     };
 
-    const [pathName] = tile.pathImg.src.split("/").slice(-1);
-    tile.pathImg = this.images.get(
-      imgRotationMap[pathName].imgSrc
-    ) as HTMLImageElement;
-    tile.paths = imgRotationMap[pathName].paths;
+    const rotatedPaths = tile.paths.map((path) => pathsRotationMap[path]);
+    const matchingEntry = Object.values(pathsMap).find(
+      ({ paths: entryPaths }) =>
+        rotatedPaths.every((path) => entryPaths.includes(path))
+    );
+
+    if (matchingEntry) {
+      const { imgSrc } = matchingEntry;
+      tile.pathImg = this.images.get(imgSrc) as HTMLImageElement;
+      tile.paths = rotatedPaths;
+    }
   }
 
   async shiftAndRise(

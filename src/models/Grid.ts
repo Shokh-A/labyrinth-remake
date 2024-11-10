@@ -712,7 +712,7 @@ class Grid {
     if (result.length < 2) return result;
 
     const filtered: { row: number; col: number }[] = [];
-    let start = result[0];
+    // let start = result[0];
 
     for (let i = 1; i < result.length; i++) {
       const prev = result[i - 1];
@@ -730,7 +730,7 @@ class Grid {
       ) {
         // filtered.push(start);
         filtered.push(curr);
-        start = curr;
+        // start = curr;
       }
     }
 

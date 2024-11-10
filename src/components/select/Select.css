@@ -1,0 +1,18 @@
+.select-container {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+
+.select-label {
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.custom-select {
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}

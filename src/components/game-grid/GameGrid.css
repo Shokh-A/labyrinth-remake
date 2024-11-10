@@ -2,10 +2,11 @@
   display: flex;
   overflow-x: auto;
   white-space: nowrap;
-  background-image: url("../assets/images/ui/Panel.png");
+  background-image: url("../../assets/images/ui/Panel.png");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  border-radius: 14px;
 }
 
 #gameCanvas,

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { GameEngine } from "../models";
+import { GameEngine } from "../../models";
 import "./GameGrid.css";
 
 const WORLD_WIDTH = 900;

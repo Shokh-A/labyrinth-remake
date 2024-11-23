@@ -28,12 +28,18 @@
 }
 
 .modal-close-button {
+  color: #f1f1f2;
   background: none;
-  border: none;
-  padding: 8px;
-  cursor: pointer;
-  color: #fff;
+  padding: 10px 8px 8px 10px;
+  border: 2px solid #232325;
+  border-radius: 4px;
+  font-family: "Press Start 2P", system-ui;
   font-size: 24px;
+  cursor: pointer;
+}
+
+.modal-close-button:hover {
+  color: #757575;
 }
 
 h2 {

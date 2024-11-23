@@ -1,19 +1,22 @@
-.button {
+.custom-button {
   background-color: #28272a;
+  font-family: "Press Start 2P", system-ui;
   font-size: 16px;
   padding: 10px 20px;
   border: none;
   border-radius: 4px;
-  color: #fff;
+  color: #f1f1f2;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: background-color 0.3s ease, opacity 0.3s ease;
+  transition: background-color 0.1s ease, opacity 0.1s ease;
 }
 
-.button:hover:not(:disabled) {
-  background-color: #0056b3;
+.custom-button:hover:not(:disabled) {
+  color: #28272a;
+  background-color: #f1f1f2;
 }
 
-.button:disabled {
+.custom-button:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.5;
 }

@@ -1,35 +1,42 @@
 import React, { useState } from "react";
 import "./SelectButton.css";
+import SelectOptionButton from "../select-option-button/SelectOptionButton";
 
 interface SelectButtonProps {
-  children: React.ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
+  label: string;
+  options: string[];
+  onSelect: (option: string) => void;
 }
 
 const SelectButton: React.FC<SelectButtonProps> = ({
-  children,
-  onClick,
-  disabled = false,
+  label,
+  options,
+  onSelect,
 }) => {
-  const [isSelected, setIsSelected] = useState(false);
+  const [selectedOption, setSelectedOption] = useState<string>("");
+  const [optionValues, setOptions] = useState<string[]>(options);
 
-  const handleButtonClick = () => {
-    setIsSelected(!isSelected);
-    onClick();
+  const handleOptionClick = (value: string) => {
+    setSelectedOption(value);
+    setOptions(optionValues);
+    onSelect(value);
   };
 
   return (
-    <button
-      className="custom-select-button"
-      onClick={handleButtonClick}
-      disabled={disabled}
-      style={{
-        backgroundColor: isSelected ? "#008000" : "#28272a",
-      }}
-    >
-      {children}
-    </button>
+    <div>
+      <label>{label}</label>
+      <div className="option-buttons-container">
+        {options.map((option: string) => (
+          <SelectOptionButton
+            key={option}
+            isSelected={option === selectedOption}
+            onClick={() => handleOptionClick(option)}
+          >
+            {option}
+          </SelectOptionButton>
+        ))}
+      </div>
+    </div>
   );
 };
 

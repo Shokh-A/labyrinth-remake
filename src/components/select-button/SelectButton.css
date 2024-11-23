@@ -1,0 +1,10 @@
+.custom-select-button {
+  color: #fff;
+  background-color: #28272a;
+  font-family: "Press Start 2P", system-ui;
+  font-size: 14px;
+  padding: 14px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}

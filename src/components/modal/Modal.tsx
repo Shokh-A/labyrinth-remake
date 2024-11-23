@@ -17,7 +17,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
         <div className="modal-header">
           {title && <h2 className="modal-title">{title}</h2>}
           <button className="modal-close-button" onClick={onClose}>
-            ✕
+            &times;
           </button>
         </div>
         <div className="modal-body">{children}</div>

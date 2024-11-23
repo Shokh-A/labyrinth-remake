@@ -1,29 +1,38 @@
-import React, { useState } from "react";
-import "./SelectButton.css";
+import React, { useEffect, useState } from "react";
 import SelectOptionButton from "../select-option-button/SelectOptionButton";
+import "./SelectButton.css";
 
 interface SelectButtonProps {
   label: string;
+  value?: string;
   options: string[];
   onSelect: (option: string) => void;
 }
 
 const SelectButton: React.FC<SelectButtonProps> = ({
   label,
+  value,
   options,
   onSelect,
 }) => {
   const [selectedOption, setSelectedOption] = useState<string>("");
-  const [optionValues, setOptions] = useState<string[]>(options);
+
+  useEffect(() => {
+    setSelectedOption(value || "");
+  }, [value]);
 
   const handleOptionClick = (value: string) => {
-    setSelectedOption(value);
-    setOptions(optionValues);
-    onSelect(value);
+    if (value === selectedOption) {
+      setSelectedOption("");
+      onSelect("");
+    } else {
+      setSelectedOption(value);
+      onSelect(value);
+    }
   };
 
   return (
-    <div>
+    <div className="option-button">
       <label>{label}</label>
       <div className="option-buttons-container">
         {options.map((option: string) => (

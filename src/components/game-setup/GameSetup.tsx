@@ -1,121 +1,154 @@
-import React, { useEffect, useState } from "react";
+import React, { ChangeEvent, useEffect, useRef, useState } from "react";
 import Button from "../button/Button";
-import GameGrid from "../game-grid/GameGrid";
-import Input from "../input/Input";
 import Modal from "../modal/Modal";
-import Select from "../select/Select";
+import SelectButton from "../select-button/SelectButton";
+import { Swiper, SwiperSlide, useSwiper } from "swiper/react";
+import "swiper/css";
 import "./GameSetup.css";
+import Input from "../input/Input";
+import GameGrid from "../game-grid/GameGrid";
 
 const GameSetup: React.FC = () => {
+  const swiperRef = useRef<any>(null);
+  const [isLocal, setIsLocal] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(true);
-  const [numPlayers, setNumPlayers] = useState<number>(2);
-  const [numCollectibles, setNumCollectibles] = useState<number>(2);
-  const [collectibleOptions, setCollectibleOptions] = useState([2, 4, 6, 8]);
-  const [showNameInputs, setShowNameInputs] = useState<boolean>(false);
+  const [numPlayers, setNumPlayers] = useState<number>();
   const [playerNames, setPlayerNames] = useState<string[]>([]);
-  const [showGameGrid, setShowGameGrid] = useState(false);
+  const [numCollectibles, setNumCollectibles] = useState<number>();
+  const [collectibleOptions, setCollectibleOptions] = useState([
+    2, 4, 6, 8, 10, 12,
+  ]);
 
   useEffect(() => {
+    if (!numPlayers) return;
     const maxCollectibles = 24 / numPlayers;
     const options = [];
     for (let i = 2; i <= maxCollectibles; i += 2) {
       options.push(i);
     }
     setCollectibleOptions(options);
-    if (numCollectibles > maxCollectibles) setNumCollectibles(options[0]);
-  }, [numPlayers]);
 
-  const handleNextClick = () => {
+    if (numCollectibles && numCollectibles > maxCollectibles) {
+      setNumCollectibles(undefined);
+    }
+
     if (playerNames.length !== numPlayers) {
       setPlayerNames(Array.from({ length: numPlayers }).map(() => ""));
     }
-    setShowNameInputs(true);
+  }, [numPlayers]);
+
+  const handleLocalClick = () => {
+    setIsLocal(true);
+    swiperRef.current.swiper.slideNext();
   };
 
-  const handlePlayerNameChange = (index: number, name: string) => {
-    const updatedNames = [...playerNames];
-    updatedNames[index] = name;
-    setPlayerNames(updatedNames);
+  const handleOnlineClick = () => {
+    setIsLocal(false);
+    swiperRef.current.swiper.slideNext();
   };
 
-  const closeModal = () => {
+  const handleNextClick = () => {
+    swiperRef.current.swiper.slideNext();
+  };
+
+  const handleBackClick = () => {
+    swiperRef.current.swiper.slidePrev();
+  };
+
+  const handleStartClick = () => {
     setIsModalOpen(false);
-  };
-
-  const startGame = () => {
-    setShowGameGrid(true);
   };
 
   return (
     <>
-      {showGameGrid ? (
+      {!isModalOpen && numCollectibles && (
         <GameGrid
           playerNames={playerNames}
-          numOfCollectibles={numCollectibles!}
-          onReset={() => {
-            setShowGameGrid(false);
-            setIsModalOpen(true);
-          }}
+          numOfCollectibles={numCollectibles}
+          onReset={() => setIsModalOpen(true)}
         />
-      ) : (
-        <Modal title="Game settings" isOpen={isModalOpen} onClose={() => {}}>
-          {!showNameInputs ? (
-            <>
-              <Select
-                label="Select number of players:"
-                value={numPlayers}
-                options={[2, 3, 4].map((num) => ({
-                  label: num.toString(),
-                  value: num,
-                }))}
-                onChange={(value) => setNumPlayers(value as number)}
-              />
-              <Select
-                label="Select number of collectibles per player:"
-                value={numCollectibles}
-                options={collectibleOptions.map((num) => ({
-                  label: num.toString(),
-                  value: num,
-                }))}
-                onChange={(value) => setNumCollectibles(value as number)}
-              />
-              <div className="button-container">
-                <div style={{ flex: 1 }} /> {/* Spacer */}
-                <Button
-                  label="Next"
-                  onClick={handleNextClick}
-                  disabled={!numPlayers || !numCollectibles}
+      )}
+      <Modal title="Game settings" isOpen={isModalOpen} onClose={() => {}}>
+        <Swiper
+          ref={swiperRef}
+          autoHeight={true}
+          allowTouchMove={false}
+          spaceBetween={50}
+          slidesPerView={1}
+        >
+          <SwiperSlide>
+            <div className="local-online-container">
+              <Button label="Local" onClick={handleLocalClick} />
+              <Button label="Online" onClick={handleOnlineClick} />
+            </div>
+          </SwiperSlide>
+          <SwiperSlide>
+            {isLocal ? (
+              <>
+                <SelectButton
+                  label="Select number of players:"
+                  options={["2", "3", "4"]}
+                  value={numPlayers?.toString()}
+                  onSelect={(value: string) => setNumPlayers(parseInt(value))}
                 />
-              </div>
-            </>
-          ) : (
-            <>
-              {Array.from({ length: numPlayers || 0 }).map((_, index) => (
-                <Input
-                  key={index}
-                  label={`Player ${index + 1} name:`}
-                  placeholder="Enter player name"
-                  type="text"
-                  value={playerNames[index] || ""}
-                  onChange={(e) =>
-                    handlePlayerNameChange(index, e.target.value)
+                <SelectButton
+                  label="Select number of collectibles per player:"
+                  options={collectibleOptions.map((option) =>
+                    option.toString()
+                  )}
+                  value={numCollectibles?.toString()}
+                  onSelect={(value: string) =>
+                    setNumCollectibles(parseInt(value))
                   }
                 />
-              ))}
-              <div className="button-container">
-                <Button label="Back" onClick={() => setShowNameInputs(false)} />
-                <Button
-                  label="Start game"
-                  onClick={() => {
-                    startGame();
-                    closeModal();
+              </>
+            ) : (
+              <div>
+                <Button label="Generate invite ID" onClick={() => {}} />
+              </div>
+            )}
+            <div className="button-container">
+              <Button label="Back" onClick={handleBackClick} />
+              <Button
+                label="Next"
+                disabled={!numPlayers || !numCollectibles}
+                onClick={handleNextClick}
+              />
+            </div>
+          </SwiperSlide>
+          <SwiperSlide>
+            <div className="player-name-inputs">
+              {playerNames.map((name, index) => (
+                <Input
+                  key={index}
+                  label={`Player #${index + 1} name:`}
+                  placeholder="Enter player name..."
+                  value={name}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setPlayerNames((prev) => {
+                      const newPlayerNames = [...prev];
+                      newPlayerNames[index] = event.target.value;
+                      return newPlayerNames;
+                    });
                   }}
                 />
-              </div>
-            </>
-          )}
-        </Modal>
-      )}
+              ))}
+            </div>
+            <div className="button-container">
+              <Button label="Back" onClick={handleBackClick} />
+              <Button
+                label="Start"
+                disabled={!numPlayers || !numCollectibles}
+                onClick={handleStartClick}
+              />
+            </div>
+          </SwiperSlide>
+
+          <SwiperSlide>
+            <div>Online game setup</div>
+          </SwiperSlide>
+        </Swiper>
+      </Modal>
     </>
   );
 };

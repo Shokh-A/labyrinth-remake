@@ -12,14 +12,18 @@
 }
 
 .modal-content {
+  display: flex;
+  flex-direction: column;
   background-color: #09090b;
   border-radius: 16px;
   position: relative;
   width: 500px;
   max-width: 90%;
+  min-height: 300px;
 }
 
 .modal-header {
+  flex: 0 0 auto;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -48,6 +52,7 @@ h2 {
 }
 
 .modal-body {
+  flex: 1 1 auto;
   padding: 20px;
-  margin-block: 16px;
+  margin-top: 16px;
 }

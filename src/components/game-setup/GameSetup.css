@@ -2,3 +2,10 @@
   display: flex;
   justify-content: space-between;
 }
+
+.local-online-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-block: 40px;
+}

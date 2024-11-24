@@ -1,7 +1,7 @@
 .input-container {
   display: flex;
   flex-direction: column;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .input-label {
@@ -10,19 +10,20 @@
 }
 
 .input-field {
+  outline: none;
+  box-sizing: border-box;
+  color: #28272a;
+  background-color: #f1f1f2;
   padding: 8px;
+  font-family: "Press Start 2P", system-ui;
   font-size: 14px;
-  border: 1px solid #ccc;
+  font-weight: 600;
+  border: 4px solid #232325;
   border-radius: 4px;
-  transition: border-color 0.3s ease;
+  transition: border-color 0.1s ease;
 }
 
 .input-field:focus {
   outline: none;
-  border-color: #007bff;
-}
-
-.input-field:disabled {
-  background-color: #f0f0f0;
-  cursor: not-allowed;
+  border: 4px solid #007bff;
 }

@@ -7,6 +7,7 @@ import "swiper/css";
 import "./GameSetup.css";
 import Input from "../input/Input";
 import GameGrid from "../game-grid/GameGrid";
+import { nanoid } from "nanoid";
 
 const GameSetup: React.FC = () => {
   const swiperRef = useRef<any>(null);
@@ -18,6 +19,7 @@ const GameSetup: React.FC = () => {
   const [collectibleOptions, setCollectibleOptions] = useState([
     2, 4, 6, 8, 10, 12,
   ]);
+  const [roomId, setRoomId] = useState<string>("");
 
   useEffect(() => {
     if (!numPlayers) return;
@@ -57,6 +59,16 @@ const GameSetup: React.FC = () => {
 
   const handleStartClick = () => {
     setIsModalOpen(false);
+  };
+
+  const handleCreateRoomClick = () => {
+    const roomId = nanoid(10);
+    setRoomId(roomId);
+    swiperRef.current.swiper.slideNext();
+  };
+
+  const handleJoinRoomClick = () => {
+    // Join room
   };
 
   return (
@@ -104,36 +116,78 @@ const GameSetup: React.FC = () => {
               </>
             ) : (
               <div>
-                <Button label="Generate invite ID" onClick={() => {}} />
-              </div>
-            )}
-            <div className="button-container">
-              <Button label="Back" onClick={handleBackClick} />
-              <Button
-                label="Next"
-                disabled={!numPlayers || !numCollectibles}
-                onClick={handleNextClick}
-              />
-            </div>
-          </SwiperSlide>
-          <SwiperSlide>
-            <div className="player-name-inputs">
-              {playerNames.map((name, index) => (
                 <Input
-                  key={index}
-                  label={`Player #${index + 1} name:`}
-                  placeholder="Enter player name..."
-                  value={name}
+                  placeholder="Enter your name..."
                   onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    const curPlayerName = event.target.value;
                     setPlayerNames((prev) => {
                       const newPlayerNames = [...prev];
-                      newPlayerNames[index] = event.target.value;
+                      newPlayerNames[0] = curPlayerName;
                       return newPlayerNames;
                     });
                   }}
                 />
-              ))}
+
+                <Input
+                  // value=""
+                  placeholder="Enter room ID..."
+                  onChange={handleJoinRoomClick}
+                />
+                <Button label="Join" onClick={() => {}} float="right" />
+                <Button label="New room" onClick={handleCreateRoomClick} />
+              </div>
+            )}
+            <div className="button-container">
+              <Button label="Back" onClick={handleBackClick} />
+              {isLocal && (
+                <Button
+                  label="Next"
+                  disabled={!numPlayers || !numCollectibles}
+                  onClick={handleNextClick}
+                />
+              )}
             </div>
+          </SwiperSlide>
+          <SwiperSlide>
+            {isLocal ? (
+              <div className="player-name-inputs">
+                {playerNames.map((name, index) => (
+                  <Input
+                    key={index}
+                    label={`Player #${index + 1} name:`}
+                    placeholder="Enter player name..."
+                    value={name}
+                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                      setPlayerNames((prev) => {
+                        const newPlayerNames = [...prev];
+                        newPlayerNames[index] = event.target.value;
+                        return newPlayerNames;
+                      });
+                    }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div>
+                <p>Room id: {roomId}</p>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Player name</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {playerNames.map((name, index) => (
+                      <tr>
+                        <td>{index + 1}</td>
+                        <td>{name}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
             <div className="button-container">
               <Button label="Back" onClick={handleBackClick} />
               <Button
@@ -142,10 +196,6 @@ const GameSetup: React.FC = () => {
                 onClick={handleStartClick}
               />
             </div>
-          </SwiperSlide>
-
-          <SwiperSlide>
-            <div>Online game setup</div>
           </SwiperSlide>
         </Swiper>
       </Modal>

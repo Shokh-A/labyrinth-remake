@@ -6,6 +6,7 @@ interface ButtonProps {
   onClick: () => void;
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
+  float?: "left" | "right";
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -13,6 +14,7 @@ const Button: React.FC<ButtonProps> = ({
   onClick,
   type = "button",
   disabled = false,
+  float,
 }) => {
   return (
     <button
@@ -20,6 +22,7 @@ const Button: React.FC<ButtonProps> = ({
       type={type}
       onClick={onClick}
       disabled={disabled}
+      style={{ float }}
     >
       {label}
     </button>

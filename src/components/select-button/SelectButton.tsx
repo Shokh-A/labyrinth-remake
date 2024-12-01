@@ -4,9 +4,9 @@ import "./SelectButton.css";
 
 interface SelectButtonProps {
   label: string;
-  value?: string;
-  options: string[];
-  onSelect: (option: string) => void;
+  value?: any;
+  options: { label: string; value: any }[];
+  onSelect: (option: any) => void;
 }
 
 const SelectButton: React.FC<SelectButtonProps> = ({
@@ -15,16 +15,16 @@ const SelectButton: React.FC<SelectButtonProps> = ({
   options,
   onSelect,
 }) => {
-  const [selectedOption, setSelectedOption] = useState<string>("");
+  const [selectedOption, setSelectedOption] = useState<any>();
 
   useEffect(() => {
-    setSelectedOption(value || "");
+    setSelectedOption(value);
   }, [value]);
 
-  const handleOptionClick = (value: string) => {
+  const handleOptionClick = (value: any) => {
     if (value === selectedOption) {
-      setSelectedOption("");
-      onSelect("");
+      setSelectedOption(undefined);
+      onSelect(undefined);
     } else {
       setSelectedOption(value);
       onSelect(value);
@@ -35,13 +35,13 @@ const SelectButton: React.FC<SelectButtonProps> = ({
     <div className="option-button">
       <label>{label}</label>
       <div className="option-buttons-container">
-        {options.map((option: string) => (
+        {options.map(({ label, value }) => (
           <SelectOptionButton
-            key={option}
-            isSelected={option === selectedOption}
-            onClick={() => handleOptionClick(option)}
+            key={label}
+            isSelected={value === selectedOption}
+            onClick={() => handleOptionClick(value)}
           >
-            {option}
+            {label}
           </SelectOptionButton>
         ))}
       </div>

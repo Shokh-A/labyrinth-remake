@@ -1,13 +1,11 @@
 import React, { ChangeEvent, useEffect, useRef, useState } from "react";
+import "swiper/css";
+import { Swiper, SwiperSlide } from "swiper/react";
 import Button from "../button/Button";
+import Input from "../input/Input";
 import Modal from "../modal/Modal";
 import SelectButton from "../select-button/SelectButton";
-import { Swiper, SwiperSlide, useSwiper } from "swiper/react";
-import "swiper/css";
 import "./GameSetup.css";
-import Input from "../input/Input";
-import GameGrid from "../game-grid/GameGrid";
-import { nanoid } from "nanoid";
 
 const GameSetup: React.FC = () => {
   const swiperRef = useRef<any>(null);
@@ -19,7 +17,6 @@ const GameSetup: React.FC = () => {
   const [collectibleOptions, setCollectibleOptions] = useState([
     2, 4, 6, 8, 10, 12,
   ]);
-  const [roomId, setRoomId] = useState<string>("");
 
   useEffect(() => {
     if (!numPlayers) return;
@@ -62,8 +59,6 @@ const GameSetup: React.FC = () => {
   };
 
   const handleCreateRoomClick = () => {
-    const roomId = nanoid(10);
-    setRoomId(roomId);
     swiperRef.current.swiper.slideNext();
   };
 
@@ -74,11 +69,12 @@ const GameSetup: React.FC = () => {
   return (
     <>
       {!isModalOpen && numCollectibles && (
-        <GameGrid
-          playerNames={playerNames}
-          numOfCollectibles={numCollectibles}
-          onReset={() => setIsModalOpen(true)}
-        />
+        <h1>Game started!</h1>
+        // <GameGrid
+        //   playerNames={playerNames}
+        //   numOfCollectibles={numCollectibles}
+        //   onReset={() => setIsModalOpen(true)}
+        // />
       )}
       <Modal title="Game settings" isOpen={isModalOpen} onClose={() => {}}>
         <Swiper
@@ -99,19 +95,21 @@ const GameSetup: React.FC = () => {
               <>
                 <SelectButton
                   label="Select number of players:"
-                  options={["2", "3", "4"]}
-                  value={numPlayers?.toString()}
-                  onSelect={(value: string) => setNumPlayers(parseInt(value))}
+                  options={[2, 3, 4].map((option) => ({
+                    label: option.toString(),
+                    value: option,
+                  }))}
+                  value={numPlayers}
+                  onSelect={(value: any) => setNumPlayers(value)}
                 />
                 <SelectButton
                   label="Select number of collectibles per player:"
-                  options={collectibleOptions.map((option) =>
-                    option.toString()
-                  )}
-                  value={numCollectibles?.toString()}
-                  onSelect={(value: string) =>
-                    setNumCollectibles(parseInt(value))
-                  }
+                  options={collectibleOptions.map((option) => ({
+                    label: option.toString(),
+                    value: option,
+                  }))}
+                  value={numCollectibles}
+                  onSelect={(value: any) => setNumCollectibles(value)}
                 />
               </>
             ) : (
@@ -149,45 +147,24 @@ const GameSetup: React.FC = () => {
             </div>
           </SwiperSlide>
           <SwiperSlide>
-            {isLocal ? (
-              <div className="player-name-inputs">
-                {playerNames.map((name, index) => (
-                  <Input
-                    key={index}
-                    label={`Player #${index + 1} name:`}
-                    placeholder="Enter player name..."
-                    value={name}
-                    onChange={(event: ChangeEvent<HTMLInputElement>) => {
-                      setPlayerNames((prev) => {
-                        const newPlayerNames = [...prev];
-                        newPlayerNames[index] = event.target.value;
-                        return newPlayerNames;
-                      });
-                    }}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div>
-                <p>Room id: {roomId}</p>
-                <table>
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Player name</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {playerNames.map((name, index) => (
-                      <tr>
-                        <td>{index + 1}</td>
-                        <td>{name}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <div className="player-name-inputs">
+              {playerNames.map((name, index) => (
+                <Input
+                  key={index}
+                  label={`Player #${index + 1} name:`}
+                  placeholder="Enter player name..."
+                  value={name}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => {
+                    setPlayerNames((prev) => {
+                      const newPlayerNames = [...prev];
+                      newPlayerNames[index] = event.target.value;
+                      return newPlayerNames;
+                    });
+                  }}
+                />
+              ))}
+            </div>
+
             <div className="button-container">
               <Button label="Back" onClick={handleBackClick} />
               <Button

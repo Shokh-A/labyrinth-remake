@@ -26,6 +26,7 @@ const Input: React.FC<InputProps> = ({
       <input
         className="input-field"
         type={type}
+        maxLength={20}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
